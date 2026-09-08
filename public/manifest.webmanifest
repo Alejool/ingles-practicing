@@ -1,0 +1,84 @@
+{
+  "name": "Ruta B1 → B2 · Inglés para certificación",
+  "short_name": "Ruta B1→B2",
+  "description": "Entrenamiento interactivo de inglés B1–B2 para exámenes de certificación: diagnóstico, plan de 24 semanas, gramática, vocabulario con repetición espaciada, Use of English, writing, speaking y simulacro cronometrado.",
+  "lang": "es",
+  "dir": "ltr",
+  "id": "/ruta-b1b2/",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#ECEFF5",
+  "theme_color": "#1B4C93",
+  "categories": [
+    "education",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Vocabulario de hoy",
+      "short_name": "Vocabulario",
+      "url": "./#vocab",
+      "icons": [
+        {
+          "src": "./icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Simulacro cronometrado",
+      "short_name": "Simulacro",
+      "url": "./#mock",
+      "icons": [
+        {
+          "src": "./icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Tutor",
+      "short_name": "Tutor",
+      "url": "./#tutor",
+      "icons": [
+        {
+          "src": "./icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

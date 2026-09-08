@@ -1,0 +1,57 @@
+---
+import Base from "../layouts/Base.astro";
+import Rail from "../components/Rail.astro";
+
+import Panel from "../components/views/Panel.astro";
+import Exams from "../components/views/Exams.astro";
+import Diagnostic from "../components/views/Diagnostic.astro";
+import Plan from "../components/views/Plan.astro";
+import Grammar from "../components/views/Grammar.astro";
+import Vocab from "../components/views/Vocab.astro";
+import Mine from "../components/views/Mine.astro";
+import Uoe from "../components/views/Uoe.astro";
+import Writing from "../components/views/Writing.astro";
+import Reading from "../components/views/Reading.astro";
+import Speaking from "../components/views/Speaking.astro";
+import Quiz from "../components/views/Quiz.astro";
+import Mock from "../components/views/Mock.astro";
+import Errors from "../components/views/Errors.astro";
+import Tutor from "../components/views/Tutor.astro";
+import Resources from "../components/views/Resources.astro";
+import Settings from "../components/views/Settings.astro";
+import Account from "../components/views/Account.astro";
+
+const title = "Ruta B1 → B2";
+const description =
+  "Entrenamiento interactivo de inglés A2–B2 para exámenes de certificación: diagnóstico, plan diario de 120 días, gramática, vocabulario por tipo de palabra con repetición espaciada, cuaderno de palabras difíciles, Use of English, writing, speaking con dictado y corrección, biblioteca de lecturas y simulacro cronometrado.";
+---
+
+<Base title={title} description={description}>
+  <div class="app">
+    <Rail />
+    <main class="main" id="main">
+      <Panel />
+      <Exams />
+      <Diagnostic />
+      <Plan />
+      <Grammar />
+      <Vocab />
+      <Mine />
+      <Uoe />
+      <Writing />
+      <Reading />
+      <Speaking />
+      <Quiz />
+      <Mock />
+      <Errors />
+      <Tutor />
+      <Resources />
+      <Settings />
+      <Account />
+    </main>
+  </div>
+</Base>
+
+<script>
+  import "../scripts/main";
+</script>

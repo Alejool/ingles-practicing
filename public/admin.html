@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Panel · Ruta B1 → B2</title>
+<style>
+  :root{--paper:#ECEFF5;--ink:#131A29;--soft:#5C6780;--line:#CBD3E2;--acc:#1B4C93;--bad:#A6392E;--warn:#855A08}
+  @media (prefers-color-scheme:dark){:root{--paper:#0A101E;--ink:#E8ECF5;--soft:#7B87A0;--line:#222D45;--acc:#7FAEF9;--bad:#E8806E;--warn:#DCA845}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 18px 80px}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:16px;margin:28px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
+  p.sub{color:var(--soft);margin:0 0 18px}
+  .card{border:1px solid var(--line);border-radius:12px;padding:14px;background:transparent}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  input[type=password],input[type=text]{flex:1;min-width:220px;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit;font:inherit}
+  button{min-height:44px;padding:10px 16px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+  button.p{background:var(--acc);border-color:var(--acc);color:var(--paper)}
+  button.s{min-height:36px;padding:6px 12px;font-size:13px}
+  button:disabled{opacity:.5;cursor:default}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+  .kpi{border:1px solid var(--line);border-radius:12px;padding:12px}
+  .kpi b{display:block;font-size:22px;line-height:1.2}
+  .kpi span{color:var(--soft);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+  table{border-collapse:collapse;width:100%;font-size:14px;min-width:520px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+  th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--soft)}
+  tr:last-child td{border-bottom:0}
+  .bar{height:8px;border-radius:6px;background:var(--acc);min-width:2px}
+  .muted{color:var(--soft)}
+  .err{color:var(--bad)}
+  .ok{color:var(--acc)}
+  .msg{margin-top:12px}
+  .oculto td{opacity:.45}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Panel de administración</h1>
+  <p class="sub">Gasto, dónde abandona la gente y moderación de la biblioteca. El token no sale de esta pestaña.</p>
+
+  <div class="card">
+    <div class="row">
+      <input id="tok" type="password" placeholder="ADMIN_TOKEN" autocomplete="off" spellcheck="false">
+      <button class="p" id="go" type="button">Entrar</button>
+      <button id="ver" type="button">Ver / ocultar</button>
+      <label class="muted" style="display:flex;gap:6px;align-items:center"><input id="rec" type="checkbox"> recordar en esta pestaña</label>
+    </div>
+    <div class="msg muted" id="msg">Sin ADMIN_TOKEN en el servidor este panel responde 404.</div>
+  </div>
+
+  <div id="out" hidden></div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const out = $("#out"), msg = $("#msg");
+let TOKEN = sessionStorage.getItem("admin-tok") || "";
+if (TOKEN) { $("#tok").value = TOKEN; $("#rec").checked = true; }
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const n = v => (v ?? 0).toLocaleString("es");
+const usd = v => "$" + Number(v ?? 0).toFixed(4);
+
+async function api(qs, init) {
+  const r = await fetch("/api/admin?token=" + encodeURIComponent(TOKEN) + (qs || ""), init);
+  const b = await r.json().catch(() => null);
+  if (!r.ok) throw new Error(b?.error?.message || ("HTTP " + r.status));
+  return b;
+}
+
+function tabla(cols, filas, clase) {
+  if (!filas.length) return '<p class="muted">Nada todavía.</p>';
+  return '<div class="tw"><table><thead><tr>' + cols.map(c => "<th>" + esc(c) + "</th>").join("") +
+    "</tr></thead><tbody>" + filas.map(f =>
+      '<tr' + (clase && clase(f) ? ' class="' + clase(f) + '"' : "") + ">" +
+      f.map(c => "<td>" + (typeof c === "string" && c.startsWith("<") ? c : esc(c)) + "</td>").join("") + "</tr>").join("") +
+    "</tbody></table></div>";
+}
+
+function pinta(d) {
+  const t = d.totales || {}, u = d.uso || {}, r = u.resumen || {}, p = d.presupuesto || {};
+  const maxTramo = Math.max(1, ...(u.embudo || []).map(e => e.personas));
+  const maxMod = Math.max(1, ...(u.modulos_abiertos || []).map(m => m.personas));
+
+  out.innerHTML =
+    '<h2>Hoy y este mes</h2>' +
+    '<div class="kpis">' + [
+      ["Cuentas", n(t.usuarios)], ["Llamadas hoy", n(t.hoy)],
+      ["Gasto hoy", usd(t.usd_hoy) + " / $" + p.tope_diario_usd],
+      ["Gasto del mes", usd(t.usd_mes)], ["Tokens del mes", n(t.tokens_mes)],
+      ["Personas (latido)", n(r.personas)], ["Activas 7 días", n(r.activos_7d)],
+      ["Día medio del plan", n(r.dia_medio)],
+    ].map(([k, v]) => '<div class="kpi"><b>' + esc(v) + "</b><span>" + esc(k) + "</span></div>").join("") + "</div>" +
+
+    "<h2>Gasto por tipo de llamada</h2>" +
+    tabla(["Tipo", "Llamadas", "Tokens", "USD", "USD por llamada"],
+      (d.por_tipo || []).map(k => [k.kind, n(k.llamadas), n(k.tokens), usd(k.usd), "$" + Number(k.usd_por_llamada).toFixed(5)])) +
+
+    "<h2>Últimos días</h2>" +
+    tabla(["Día", "Llamadas", "Personas", "Entrada", "Salida", "USD", "Anónimas"],
+      (d.por_dia || []).slice(0, 14).map(k => [k.day, n(k.llamadas), n(k.personas), n(k.tokens_entrada), n(k.tokens_salida), usd(k.usd), n(k.anonimas)])) +
+
+    "<h2>Dónde se cae la gente</h2>" +
+    '<p class="muted">Cada tramo son diez días del plan: 1 = días 1–10, 2 = 11–20…</p>' +
+    tabla(["Ruta", "Tramo", "Personas", "", "Días hechos (media)", "Activas 7 d"],
+      (u.embudo || []).map(e => [e.track, "" + e.tramo, n(e.personas),
+        '<div class="bar" style="width:' + Math.round(e.personas / maxTramo * 160) + 'px"></div>',
+        n(e.dias_hechos_medio), n(e.activos_7d)])) +
+
+    "<h2>Módulos que se abren</h2>" +
+    tabla(["Módulo", "Personas", "", "% de las personas"],
+      (u.modulos_abiertos || []).map(m => [m.modulo, n(m.personas),
+        '<div class="bar" style="width:' + Math.round(m.personas / maxMod * 160) + 'px"></div>',
+        (r.personas ? Math.round(m.personas / r.personas * 100) : 0) + "%"])) +
+
+    "<h2>Biblioteca compartida</h2>" +
+    '<p class="muted">Textos que genera la gente y que ven los demás. Ocultar uno lo saca de la biblioteca al instante.</p>' +
+    tabla(["#", "Ruta", "Nivel", "Título", "Palabras", "Leídas", "Día", "Autor", ""],
+      (d.biblioteca || []).map(b => [b.id, b.track, b.level, b.title, n(b.words), n(b.reads), b.dia, b.autor || "—",
+        '<button class="s" data-hide="' + b.id + '" data-show="' + (b.hidden ? 1 : 0) + '">' +
+        (b.hidden ? "Mostrar" : "Ocultar") + "</button>"]),
+      f => (d.biblioteca.find(b => b.id === f[0])?.hidden ? "oculto" : "")) +
+
+    "<h2>Mantenimiento</h2>" +
+    '<div class="row"><button id="schema" type="button">Aplicar el esquema de la base</button>' +
+    '<button id="limpiar" type="button">Borrar los datos de prueba</button>' +
+    '<span class="muted">Crédito: ' + usd(p.credito_usd) + " · " + n(p.creditos_dia_por_cuenta) + " créditos/día por cuenta · " +
+    n(p.creditos_prueba) + " de prueba sin cuenta</span></div>";
+
+  out.hidden = false;
+
+  out.querySelectorAll("[data-hide]").forEach(b => b.addEventListener("click", async () => {
+    b.disabled = true;
+    try {
+      await api("&op=hide&id=" + b.dataset.hide + (b.dataset.show === "1" ? "&show=1" : ""), { method: "POST" });
+      cargar();
+    } catch (e) { aviso(e.message, true); b.disabled = false; }
+  }));
+  out.querySelector("#schema").addEventListener("click", async () => {
+    try { aviso((await api("&op=schema", { method: "POST" })).message); } catch (e) { aviso(e.message, true); }
+  });
+  out.querySelector("#limpiar").addEventListener("click", async () => {
+    try { const r = await api("&op=cleanup-test", { method: "POST" }); aviso("Borrado: " + r.borrados + " cuenta(s), " + (r.pulsos || 0) + " latido(s)."); cargar(); }
+    catch (e) { aviso(e.message, true); }
+  });
+}
+
+function aviso(texto, mal) {
+  msg.textContent = texto;
+  msg.className = "msg " + (mal ? "err" : "ok");
+}
+
+async function cargar() {
+  TOKEN = $("#tok").value.trim();
+  if (!TOKEN) return aviso("Pega el ADMIN_TOKEN.", true);
+  if ($("#rec").checked) sessionStorage.setItem("admin-tok", TOKEN); else sessionStorage.removeItem("admin-tok");
+  aviso("Cargando…");
+  try { pinta(await api("")); aviso("Actualizado " + new Date().toLocaleTimeString("es")); }
+  catch (e) { out.hidden = true; aviso(e.message, true); }
+}
+
+$("#go").addEventListener("click", cargar);
+$("#tok").addEventListener("keydown", e => { if (e.key === "Enter") cargar(); });
+$("#ver").addEventListener("click", () => { const i = $("#tok"); i.type = i.type === "password" ? "text" : "password"; });
+if (TOKEN) cargar();
+</script>
+</body>
+</html>

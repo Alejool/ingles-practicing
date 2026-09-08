@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.astro/
+.netlify/
+.vercel/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+
+# La base en carpeta (DB_DRIVER=pglite) y las copias de seguridad.
+data/
+backups/*.gz
+.despliegue.txt

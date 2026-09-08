@@ -1,0 +1,46 @@
+---
+import { EXAMS, PICKS } from "../../data/exams";
+---
+
+<section class="view" id="v-examenes">
+  <span class="eyebrow">Módulo 01 · Elegir destino</span>
+  <h1 class="h-page">Qué examen presentar</h1>
+  <p class="lede">B1 y B2 son niveles del MCER, no exámenes. Estos son los certificados que los acreditan y lo que realmente miden. Elige uno antes de la semana 4: el plan cambia según el formato.</p>
+  <div class="tblwrap" style="margin-top:22px">
+    <table>
+      <thead><tr><th>Examen</th><th>Nivel</th><th>Formato</th><th>Vigencia</th><th>Para qué sirve</th></tr></thead>
+      <tbody>
+        {EXAMS.map(e => (
+          <tr>
+            <td><b>{e.name}</b>{e.sub && <><br /><span class="tiny">{e.sub}</span></>}</td>
+            <td>{e.level}{e.levelNote && <><br /><span class="tiny mono">{e.levelNote}</span></>}</td>
+            <td>{e.format}</td>
+            <td>{e.validity}</td>
+            <td>{e.purpose}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+  <p class="tiny" style="margin-top:8px">Los rangos de equivalencia y las tarifas cambian; confirma formato y fechas en la web oficial del examen antes de inscribirte.</p>
+
+  <hr class="sep">
+  <h2 class="h-sec">Cómo elegir en 30 segundos</h2>
+  <div class="grid g2" style="margin-top:12px">
+    {PICKS.map(p => (
+      <div class="card">
+        <h3>{p.title}</h3>
+        <p class="small" style="margin-top:6px" set:html={p.body} />
+      </div>
+    ))}
+  </div>
+
+  <hr class="sep">
+  <h2 class="h-sec">Calendario inverso desde tu fecha</h2>
+  <p class="small" style="margin:6px 0 14px">Escribe la fecha del examen y te digo en qué semana del plan deberías ir hoy y qué hitos quedan.</p>
+  <div class="row" style="align-items:flex-end;max-width:520px">
+    <div style="flex:1;min-width:180px"><label class="lbl" for="examDate">Fecha del examen</label><input type="text" id="examDate" placeholder="AAAA-MM-DD  ·  ej. 2027-03-14"></div>
+    <button class="btn" id="examDateBtn" type="button">Calcular</button>
+  </div>
+  <div id="examPlanOut" class="stack" style="margin-top:14px"></div>
+</section>

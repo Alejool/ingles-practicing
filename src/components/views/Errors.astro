@@ -1,0 +1,23 @@
+<section class="view" id="v-errors">
+  <span class="eyebrow">Módulo 13 · Cuaderno de errores</span>
+  <h1 class="h-page">Tu lista negra personal</h1>
+  <p class="lede">Un error que no escribes se repite. Anota la frase que dijiste mal, pide la corrección explicada y revisa la lista los domingos. Los errores de los otros módulos entran aquí solos.</p>
+  <div class="card" style="margin-top:20px">
+    <label class="lbl" for="errIn">Frase o duda</label>
+    <textarea id="errIn" style="min-height:90px" placeholder="Ej.: I have 32 years old and I am working here since 2019."></textarea>
+    <div class="row" style="margin-top:10px">
+      <select id="errCat" style="width:auto;min-width:170px">
+        <option value="gramática">Gramática</option>
+        <option value="vocabulario">Vocabulario</option>
+        <option value="preposiciones">Preposiciones</option>
+        <option value="falsos amigos">Falso amigo</option>
+        <option value="pronunciación">Pronunciación</option>
+        <option value="registro">Registro / formalidad</option>
+      </select>
+      <button class="btn" id="errAdd" type="button">Guardar</button>
+      <button class="btn ghost" id="errFix" type="button">Corregir y explicar</button>
+    </div>
+    <div id="errFb" style="margin-top:12px"></div>
+  </div>
+  <div id="errList" class="stack" style="margin-top:16px"></div>
+</section>

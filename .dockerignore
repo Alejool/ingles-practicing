@@ -1,0 +1,14 @@
+node_modules
+dist
+.astro
+.git
+.github
+.netlify
+.vercel
+.env
+.env.*
+!.env.example
+!.env.docker.example
+*.tgz
+*.log
+server/laravel

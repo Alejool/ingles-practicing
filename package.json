@@ -1,0 +1,37 @@
+{
+  "name": "ruta-b1b2",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Entrenamiento interactivo de inglés B1–B2 para exámenes de certificación",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "node server/index.mts",
+    "build": "astro check && astro build && node scripts/precache.mts",
+    "build:fast": "astro build && node scripts/precache.mts",
+    "preview": "astro preview",
+    "check": "astro check",
+    "migrate": "node -e \"import('./netlify/functions/_db.mts').then(async m=>{const fs=await import('node:fs/promises');console.log('sentencias:',await m.migrate(await fs.readFile('db/schema.sql','utf8')))})\"",
+    "docker:up": "bash start.sh",
+    "docker:logs": "bash start.sh logs",
+    "docker:stop": "bash start.sh stop",
+    "start:local": "node -e \"process.env.DB_DRIVER='pglite';import('./server/index.mts')\""
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@netlify/functions": "^6.0.0",
+    "@types/node": "^26.4.1",
+    "@types/pg": "^8.23.1",
+    "astro": "^7.3.1",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "nodemailer": "^9.1.1",
+    "pg": "^8.23.0",
+    "@electric-sql/pglite": "^0.5.8"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
