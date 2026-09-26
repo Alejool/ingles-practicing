@@ -19,8 +19,11 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { join, posix, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const DIST = new URL("../dist/", import.meta.url).pathname;
+// fileURLToPath y no .pathname: en Windows .pathname devuelve "/C:/Users/…",
+// que al unirlo con join() acaba en "C:\\C:\\Users\\…" y no existe.
+const DIST = fileURLToPath(new URL("../dist/", import.meta.url));
 
 async function archivos(dir: string): Promise<string[]> {
   const out: string[] = [];
