@@ -10,8 +10,8 @@
  * las frases de los drills y los párrafos de las lecturas.
  */
 
-import { P, save } from "../state";
-import { $, el, toast } from "../dom";
+import { save } from "../state";
+import { el, toast } from "../dom";
 import { T, hayLecturas } from "../track";
 import { bump, tally } from "../progress";
 import { anadir } from "../mine";

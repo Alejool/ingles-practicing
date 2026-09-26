@@ -12,7 +12,8 @@ export const KEY = "ruta-b1b2-v1";
 
 export interface DiagState { answers: Record<string, number>; done: boolean; score: { right: number; pct: number } | null }
 export interface SrsCard { b: number; due: number; seen?: number }
-export interface MockRun { d: string; s: number; cs: number }
+/** d fecha · s aciertos · cs escala · m qué simulacro · t de cuántos ítems */
+export interface MockRun { d: string; s: number; cs: number; m?: number; t?: number }
 export interface ErrorNote { id: number; text: string; cat: string; d: string; fix?: string }
 export interface AiConfig { url?: string; key?: string; model?: string; temp?: number }
 
@@ -28,7 +29,7 @@ export interface TrackProgress {
   srs: Record<string, SrsCard>;
   gram: Record<string, Record<string, any>>;
   uoe: Record<string, any>;
-  mock: { best: number | null; history: MockRun[] };
+  mock: { best: number | null; history: MockRun[]; current?: number };
   writing: Record<string, { text: string; chk: Record<number, boolean> }>;
   stats: Record<string, { ok: number; n: number }>;
   /** Pasos marcados de cada día: steps["37"] = [true,false,…] */

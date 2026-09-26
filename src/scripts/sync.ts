@@ -58,12 +58,6 @@ function payload(state: AppState): Partial<AppState> {
   return rest;
 }
 
-function maxBy<T>(a: T | undefined, b: T | undefined, pick: (x: T) => number): T | undefined {
-  if (a === undefined) return b;
-  if (b === undefined) return a;
-  return pick(b) > pick(a) ? b : a;
-}
-
 /** Funde el progreso de UNA ruta quedándose con lo más avanzado de cada parte. */
 function mergeTrack(local: TrackProgress, remote: Partial<TrackProgress>): TrackProgress {
   const out: TrackProgress = structuredClone(local);
@@ -95,9 +89,10 @@ function mergeTrack(local: TrackProgress, remote: Partial<TrackProgress>): Track
   if (remote.mock) {
     out.mock.best = Math.max(out.mock.best ?? -1, remote.mock.best ?? -1);
     if (out.mock.best < 0) out.mock.best = null;
-    const seen = new Set(out.mock.history.map(h => h.d + ":" + h.s + ":" + h.cs));
+    out.mock.current = Math.max(out.mock.current ?? 0, remote.mock.current ?? 0);
+    const seen = new Set(out.mock.history.map(h => h.d + ":" + h.s + ":" + h.cs + ":" + (h.m ?? 0)));
     for (const h of remote.mock.history || []) {
-      const key = h.d + ":" + h.s + ":" + h.cs;
+      const key = h.d + ":" + h.s + ":" + h.cs + ":" + (h.m ?? 0);
       if (!seen.has(key)) { seen.add(key); out.mock.history.push(h); }
     }
     out.mock.history.sort((a, b) => a.d.localeCompare(b.d));

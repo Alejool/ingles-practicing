@@ -9,7 +9,7 @@ $("#examDateBtn").onclick=()=>{
   S.examDate=v; save();
   const days=Math.round((d.getTime()-Date.now())/86400000);
   const weeks=Math.floor(days/7);
-  let msg;
+  let msg: string;
   if(days<0) msg="Esa fecha ya pasó. Si ya presentaste el examen, fija la del siguiente objetivo.";
   else if(weeks<4) msg="Quedan "+days+" días ("+weeks+" semanas). No hay tiempo para el plan completo: ve directo al Bloque D (semanas 19–24) y prioriza formato, simulacros y Writing. Nada de vocabulario nuevo.";
   else if(weeks<12) msg="Quedan "+days+" días ("+weeks+" semanas). Plan comprimido: haz los bloques C y D en "+weeks+" semanas, a razón de "+(12/weeks>1?"más de una":"una")+" semana del plan por semana real, y un simulacro cada quince días.";

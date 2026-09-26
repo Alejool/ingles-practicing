@@ -53,7 +53,6 @@ export function montarOnboarding(alAcabar: () => void): void {
   document.body.append(capa);
   document.body.classList.add("onboarding");
 
-  let paso = 0;
   const respuestas: Record<string, number> = {};
   let preguntas: DiagItem[] = [];
 
@@ -96,7 +95,7 @@ export function montarOnboarding(alAcabar: () => void): void {
     caja.append(el("div", { class: "row", style: "margin-top:20px" },
       el("button", {
         class: "btn", type: "button",
-        onclick: () => { paso = 1; test(); },
+        onclick: () => { test(); },
       }, "Siguiente: diez preguntas"),
       saltar()));
   }
@@ -151,7 +150,7 @@ export function montarOnboarding(alAcabar: () => void): void {
       el("button", {
         class: "btn", type: "button",
         disabled: hechas < preguntas.length ? "" : null,
-        onclick: () => { paso = 2; resultado(); },
+        onclick: () => { resultado(); },
       }, hechas < preguntas.length ? "Faltan " + (preguntas.length - hechas) : "Ver dónde empiezo"),
       saltar()));
   }
@@ -194,7 +193,7 @@ export function montarOnboarding(alAcabar: () => void): void {
         el("button", {
           class: "btn small", style: "margin-left:8px", type: "button",
           onclick: () => {
-            setTrack(otra).then(() => { paso = 1; Object.keys(respuestas).forEach(k => delete respuestas[k]); test(); });
+            setTrack(otra).then(() => { Object.keys(respuestas).forEach(k => delete respuestas[k]); test(); });
           },
         }, "Probar la ruta " + (otra === "b1b2" ? "B1 → B2" : "A2 → B1"))));
     }

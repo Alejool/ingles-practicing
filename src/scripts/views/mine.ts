@@ -6,8 +6,7 @@
  */
 
 import { P, save } from "./../state";
-import { $, el, esc, toast } from "../dom";
-import { T } from "../track";
+import { $, el, toast } from "../dom";
 import {
   palabras, anadir, quitar, pendientes, calificar, porCaja, masFalladas,
   modoDe, huecoDe, acierta, casi, CAJAS,

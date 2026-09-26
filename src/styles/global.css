@@ -334,3 +334,165 @@ body.onboarding{overflow:hidden}
   /* Los enlaces sueltos dentro de un párrafo no se tocan: ahí manda el texto. */
   .row > a.btn,.row > button{flex:0 0 auto}
 }
+
+/* ---------- vocabulario ----------
+   Tres pantallas que no conviven: elegir, la tanda y el resumen. La tanda ocupa
+   el alto disponible y se responde sin mover la página: en el móvil, buscar un
+   botón desplazándose es la diferencia entre estudiar diez minutos y cerrar. */
+
+/* Listas de una línea para elegir mazo o modo: más rápidas de leer que una
+   fila de botones, y cada una es un objetivo grande de por sí. */
+.listilla{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.fila{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;
+  text-align:left;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:var(--rs);padding:11px 13px;cursor:pointer;color:var(--ink)}
+.fila:hover{border-color:var(--line-2)}
+.fila[aria-pressed="true"],.fila.on{background:var(--accent-soft);border-color:var(--accent)}
+.fila-t{font-weight:600;font-size:14.5px}
+.fila-n{grid-column:1;font-size:12px;color:var(--ink-3);line-height:1.4}
+.fila .chip,.fila-ir{grid-row:1 / span 2;align-self:center}
+.fila-ir{color:var(--ink-3);font-size:18px}
+
+/* Estudiando en el móvil, la pantalla es de la pregunta: fuera el menú, la
+   marca y el selector de ruta. En escritorio la barra lateral no roba alto, así
+   que se queda. */
+@media(max-width:959px){
+  body.sesion-activa .rail{display:none}
+  body.sesion-activa .main{padding:12px 14px 16px}
+}
+
+/* Durante una tanda, el título y la explicación del módulo desaparecen: esa
+   pantalla es solo la pregunta y sus respuestas. */
+.view.en-sesion > .eyebrow,.view.en-sesion > .h-page,.view.en-sesion > .lede{display:none}
+.view.en-sesion #vocabApp{margin-top:0}
+
+/* Las cinco cajas del Leitner, en pequeño: son un dato, no el protagonista. */
+.cajitas{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:12px}
+.cajita{border:1px solid var(--line);border-radius:var(--rs);padding:8px 4px;text-align:center;background:var(--surface-2)}
+.cajita.hoy{background:var(--accent-soft);border-color:var(--accent)}
+.cajita-v{display:block;font-family:var(--f-mono);font-size:17px;line-height:1.2}
+.cajita-l{display:block;font-size:10.5px;color:var(--ink-2);text-transform:uppercase;letter-spacing:.04em}
+.cajita-d{display:block;font-size:10px;color:var(--ink-3)}
+@media(max-width:520px){.cajitas{grid-template-columns:repeat(3,1fr)}}
+
+/* La tanda: cabecera fina, pregunta al centro, acciones abajo. */
+.sesion{display:flex;flex-direction:column;gap:14px;min-height:min(560px,72vh);max-width:620px;margin:0 auto;overflow:hidden}
+.ses-cab{display:flex;align-items:center;gap:10px}
+.ses-barra{flex:1;height:6px;background:var(--surface-3);border-radius:99px;overflow:hidden}
+.ses-barra i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .25s ease}
+/* Si la pregunta no cabe (cuatro opciones largas en una pantalla pequeña), se
+   desplaza ESTA caja, no la página: los botones de abajo no se van nunca. */
+.ses-cuerpo{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px 18px;box-shadow:var(--shadow)}
+.ses-modo{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.ses-term{font-family:var(--f-display);font-size:34px;line-height:1.15;margin-top:12px;text-wrap:balance}
+.ses-term.chico{font-size:24px}
+.ses-frase{font-size:17px;line-height:1.7;margin-top:14px;max-width:46ch;text-wrap:pretty}
+.ses-cuerpo .ipa{font-family:var(--f-mono);font-size:13px;color:var(--ink-3);margin-top:6px}
+.ses-cuerpo input[type=text]{max-width:340px;text-align:center;font-size:19px;padding:12px}
+.ses-cuerpo input.ok{border-color:var(--ok);color:var(--ok)}
+.ses-cuerpo input.mal{border-color:var(--bad);color:var(--bad)}
+.ses-pie{display:flex;flex-direction:column;gap:8px}
+.ses-pie .row{gap:8px}
+.btn.crece{flex:1;justify-content:center}
+
+/* Cuatro opciones, una por línea: en el móvil dos columnas obligan a apuntar. */
+.opciones{display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px;margin-top:18px}
+.opciones .opt{justify-content:flex-start;text-align:left;font-size:15px;padding:12px 14px}
+.opciones .opt.ok{border-color:var(--ok);background:var(--ok-soft);color:var(--ok);font-weight:600}
+.opciones .opt.mal{border-color:var(--bad);background:var(--bad-soft);color:var(--bad)}
+.opciones .opt:disabled{opacity:1;cursor:default}
+
+/* Las pistas se apilan: se ve lo que ya has gastado. */
+.pistas{display:flex;flex-direction:column;gap:6px;margin-top:12px;width:100%;max-width:420px}
+.pista{font-size:13.5px;text-align:left;background:var(--mark);color:var(--mark-ink);
+  border-radius:var(--rs);padding:8px 11px;font-family:var(--f-mono);line-height:1.5}
+
+/* La regla de una unidad, dentro del recorrido: se lee, no se estudia de un
+   vistazo, así que va alineada a la izquierda y con aire. */
+.regla{margin-top:12px;text-align:left;font-size:15px;line-height:1.7;max-width:52ch}
+.ses-cuerpo .qtext{font-size:18px;line-height:1.6;text-align:left;max-width:48ch}
+.ses-cuerpo .explain{max-width:48ch}
+.opciones .opt .k{font-family:var(--f-mono);font-size:11px;color:var(--ink-3);
+  border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-right:9px;flex:0 0 auto}
+
+/* Open cloze: el texto entero delante, con el hueco en el que estás marcado. */
+.cloze-texto{margin-top:12px;text-align:left;line-height:2.2;font-size:15.5px;max-width:52ch}
+.cloze-hueco{display:inline-block;min-width:74px;text-align:center;border-bottom:2px solid var(--line-2);
+  margin:0 3px;color:var(--ink-3);font-family:var(--f-mono);font-size:13px}
+.cloze-hueco.ahora{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);border-radius:4px 4px 0 0}
+.cloze-hueco.ok{border-color:var(--ok);color:var(--ok)}
+.cloze-hueco.mal{border-color:var(--bad);color:var(--bad)}
+
+.res-num{font-family:var(--f-display);font-size:44px;line-height:1.1;margin:8px 0 10px}
+
+@media(max-width:520px){
+  .sesion{min-height:calc(100dvh - 150px);gap:10px}
+  .ses-cuerpo{padding:18px 14px}
+  .ses-term{font-size:28px}
+  .ses-frase{font-size:16px}
+  .opciones{margin-top:14px}
+}
+
+/* ---------- lectura con preguntas ----------
+   El texto arriba con su propio scroll y la pregunta abajo: se puede releer el
+   párrafo mientras se contesta, que es como se hace en el examen de verdad. */
+.ses-cuerpo.lector{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:0;
+  justify-content:stretch;align-items:stretch;text-align:left;padding:0;overflow:hidden}
+.lec-texto{overflow-y:auto;padding:16px 16px 10px;font-size:15px}
+.lec-pregunta{border-top:1px solid var(--line);background:var(--surface-2);padding:14px 16px 16px;
+  max-height:58%;overflow-y:auto}
+.lec-pregunta .qtext{font-size:16px;line-height:1.5;margin-bottom:10px;max-width:none}
+.lec-pregunta .opciones{margin-top:0;gap:6px;max-width:none}
+.lec-pregunta .opt{padding:10px 12px;font-size:14.5px}
+@media(max-width:520px){
+  .lec-texto{font-size:14.5px;padding:12px 12px 8px}
+  .lec-pregunta{padding:12px;max-height:62%}
+}
+
+/* Opción marcada en el diagnóstico: aún no se sabe si acierta, solo que es la
+   elegida — por eso lleva el acento y no el verde. */
+.opciones .opt.elegida{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);font-weight:600}
+
+/* Repaso plegable del diagnóstico: treinta preguntas se recorren de un vistazo
+   y se abre solo la que interesa. */
+.repaso{border:1px solid var(--line);border-radius:var(--rs);background:var(--surface-2);overflow:hidden}
+.repaso > summary{display:flex;gap:10px;align-items:center;padding:11px 13px;cursor:pointer;list-style:none;min-height:44px}
+.repaso > summary::-webkit-details-marker{display:none}
+.repaso-q{flex:1;font-size:13.5px;line-height:1.4;color:var(--ink-2)}
+.repaso.ok > summary{border-left:3px solid var(--ok)}
+.repaso.mal > summary{border-left:3px solid var(--bad)}
+.repaso-body{padding:0 13px 13px 16px}
+
+/* ---------- simulacro ---------- */
+.mock-parte{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
+.ses-cuerpo.lector .mock-parte{justify-content:flex-start}
+/* Hueco ya contestado dentro del texto: se ve lo puesto sin salir del ítem. */
+.cloze-hueco.puesto{border-color:var(--ink-3);color:var(--ink-2)}
+/* La hoja de respuestas: plegada ocupa una línea, abierta es una rejilla de
+   objetivos grandes para saltar a cualquier ítem. */
+.hoja{flex:0 0 auto}
+.hoja > summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center;padding:0 14px;
+  border:1px solid var(--line);border-radius:var(--rs);background:var(--surface-2);font-size:13.5px;color:var(--ink-2)}
+.hoja > summary::-webkit-details-marker{display:none}
+.hoja[open] > summary{border-color:var(--accent);color:var(--accent-ink)}
+.hoja-rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px;margin-top:8px;
+  max-height:34vh;overflow-y:auto}
+.hoja-n{min-height:44px;border:1px solid var(--line-2);border-radius:var(--rs);background:var(--surface);
+  font-family:var(--f-mono);font-size:13px;cursor:pointer;color:var(--ink-2)}
+.hoja-n.hecho{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
+.hoja-n.ahora{outline:2px solid var(--accent-2);outline-offset:1px}
+
+/* ─────────────── Escucha: pases y transcript ─────────────── */
+.pases{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pases li{display:grid;gap:2px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--rs);background:var(--surface)}
+.pases li b{font-size:13px;font-weight:600}
+.pases li.activo{border-color:var(--accent);background:var(--accent-soft)}
+.pases li.hecho{opacity:.7}
+@media (max-width:620px){.pases{grid-template-columns:1fr}}
+.guion{display:grid;gap:8px;margin-top:10px;max-width:70ch}
+.guion p{margin:0;padding:6px 10px;border-radius:var(--rs);line-height:1.6;transition:background .2s}
+.guion p b{font-family:var(--f-body);font-weight:600;color:var(--ink-2)}
+.guion p.viva{background:var(--mark);color:var(--mark-ink)}
+.guion p.viva b{color:var(--mark-ink)}
+@media (prefers-reduced-motion:reduce){.guion p{transition:none}}

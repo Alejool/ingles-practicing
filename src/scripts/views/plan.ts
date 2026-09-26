@@ -360,7 +360,7 @@ function cabecera(day: Day, total: number, refrescar: () => void): HTMLElement {
       }, done ? "✓ Hecho · desmarcar" : "Dar el día por terminado")));
 }
 
-function calendario(total: number): HTMLElement {
+function calendario(): HTMLElement {
   const all = days();
   const hoy = openDay();
   const wrap = el("div", { class: "card", style: "margin-top:12px" },
@@ -424,7 +424,7 @@ function render(): void {
     pasos.push(ui);
     out.append(ui.node);
   });
-  out.append(calendario(all.length));
+  out.append(calendario());
 
   cabHost.append(cabecera(day, all.length, refrescar));
   retoHost.append(reto(day));

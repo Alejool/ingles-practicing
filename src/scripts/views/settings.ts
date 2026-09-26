@@ -2,15 +2,15 @@
 
 import { S, save, replaceState } from "../state";
 import { $, el, toast } from "../dom";
-import { AI_DEF, AI_MODELS, aiCfg, aiCopy, streamAi, refreshAi, usesOwnKey, ownKeyEndpoint } from "../ai";
-import { applyTheme, go, setTheme, onTheme, temaEfectivo, type Tema } from "../nav";
+import { AI_DEF, AI_MODELS, aiCfg, aiCopy, streamAi, refreshAi, usesOwnKey } from "../ai";
+import { applyTheme, go, setTheme, temaEfectivo, type Tema } from "../nav";
 import * as api from "../api";
 import { resetSyncVersion } from "../sync";
 import { pendientes, borrar, limpiarHechas, vaciar } from "../queue";
 import { pulsoApagado, apagarPulso, vistos } from "../pulse";
 
 /** Versión del contenido; acompaña a CACHE_VERSION del service worker. */
-export const APP_VERSION = "2.4.0";
+export const APP_VERSION = "3.2.0";
 
 /** main.ts inyecta el repintado completo (evita un ciclo de imports). */
 let afterImport: () => void = () => {};

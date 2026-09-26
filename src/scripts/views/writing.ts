@@ -1,5 +1,5 @@
-import { S, save, P } from "../state";
-import { $, $$, el, toast, words, rangeOf } from "../dom";
+import { save, P } from "../state";
+import { $, el, toast, words, rangeOf } from "../dom";
 import { T } from "../track";
 
 import { ask, aiNote } from "../ai";
@@ -55,7 +55,7 @@ export function renderWriting(){
   out.append(el("div",{class:"grid g2",style:"margin-top:12px"},
     el("div",{class:"card"},el("span",{class:"eyebrow"},"Lista de control · autoevaluación"),
       el("div",{style:"margin-top:8px"}, w.chk.map((c,i)=>el("label",{class:"task"+(rec.chk[i]?" done":"")},
-        el("input",{type:"checkbox",checked:rec.chk[i]?"":null,onchange:e=>{rec.chk[i]=e.target.checked;save();renderWriting();}}),
+        el("input",{type:"checkbox",checked:rec.chk[i]?"":null,onchange:(e: Event)=>{rec.chk[i]=(e.target as HTMLInputElement).checked;save();renderWriting();}}),
         el("span",{},c))))),
     el("div",{class:"card"},el("span",{class:"eyebrow"},"Cómo se puntúa"),
       el("div",{style:"margin-top:8px"}, T().rubric.map(([n,d])=>el("div",{style:"margin-bottom:9px"},
