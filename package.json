@@ -16,7 +16,8 @@
     "docker:logs": "bash start.sh logs",
     "docker:stop": "bash start.sh stop",
     "start:local": "node -e \"process.env.DB_DRIVER='pglite';import('./server/index.mts')\"",
-    "test:plan": "node --experimental-strip-types --no-warnings scripts/validar-plan.mts"
+    "test:plan": "node --experimental-strip-types --no-warnings scripts/validar-plan.mts",
+    "plan:export": "node --experimental-strip-types --no-warnings scripts/exportar-plan.mts"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",

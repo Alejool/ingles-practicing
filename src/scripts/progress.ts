@@ -17,7 +17,7 @@ export function bump(area: string, ok: boolean): void {
   touchDay();
   // Los retos del día se cumplen solos: cada respuesta corregida suma aquí.
   if (area === "gram") tally("drills");
-  else if (area === "uoe" || area === "read") tally("uoe");
+  else if (area === "uoe" || area === "read" || area === "listen") tally("uoe");
   else if (area === "vocab" && ok) tally("cards");
   else if (area === "mine" && ok) tally("cards");
   marcarActividad();
@@ -27,7 +27,7 @@ export function bump(area: string, ok: boolean): void {
 
 export const SKILLS: Array<[string, string]> = [
   ["gram", "Gramática"], ["vocab", "Vocabulario"], ["mine", "Mis palabras"],
-  ["uoe", "Use of English"], ["read", "Reading"], ["diag", "Diagnóstico"], ["mock", "Simulacro"],
+  ["uoe", "Use of English"], ["read", "Reading"], ["listen", "Listening"], ["diag", "Diagnóstico"], ["mock", "Simulacro"],
 ];
 
 export function mastery(k: string): number | null {
@@ -242,8 +242,8 @@ export function earned(): string[] {
   const out: string[] = [];
   const dias = daysDone().d;
   const racha = streakLen();
+  // best ya está en porcentaje: los simulacros no tienen todos el mismo número de ítems.
   const mejor = P().mock.best;
-  const total = T().mock ? 32 : 32;
 
   if (dias >= 1) out.push("a-start");
   if (dias >= 5) out.push("a-week");
@@ -265,8 +265,8 @@ export function earned(): string[] {
   if (itemsUoe() >= 50) out.push("u-50");
 
   if (P().mock.history.length >= 1) out.push("m-first");
-  if (mejor !== null && mejor / total >= 0.6) out.push("m-60");
-  if (mejor !== null && mejor / total >= 0.8) out.push("m-80");
+  if (mejor !== null && mejor >= 60) out.push("m-60");
+  if (mejor !== null && mejor >= 80) out.push("m-80");
 
   if (counterToday("corrections") > 0 || (P().stats.writing?.n || 0) > 0) out.push("w-ai");
   if (S.errors.length >= 10) out.push("e-10");

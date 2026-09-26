@@ -45,7 +45,7 @@ export function renderPanel(): void {
     [String(streakLen()), "Días seguidos", "Mejor racha: " + streakBest()],
     [String(sc.due), "Tarjetas para hoy", "de " + sc.total + " en los mazos"],
     [String(pendientes().length), "Palabras difíciles", palabras().length + " en tu cuaderno"],
-    [P().mock.best !== null ? P().mock.best + " pts" : "—", "Mejor simulacro", P().mock.history.length ? P().mock.history.length + " intentos" : "Sin intentos"],
+    [P().mock.best !== null ? P().mock.best + "%" : "—", "Mejor simulacro", P().mock.history.length ? P().mock.history.length + " de " + T().mocks.length + " hechos" : "Sin intentos"],
   ];
   data.forEach(([v, l, s]) => tiles.append(el("div", { class: "tile" },
     el("span", { class: "l" }, l), el("span", { class: "v" }, v), el("span", { class: "tiny" }, s))));
@@ -157,7 +157,7 @@ export function renderPanel(): void {
       .filter(x => x[2] !== null && x[2] < 70)
       .sort((a, b) => (a[2] as number) - (b[2] as number))[0];
     if (weak) steps.push(["Punto débil: " + weak[1] + " (" + weak[2] + "%)",
-      weak[0] === "read" ? "input" : weak[0] === "vocab" ? "vocab" : weak[0] === "uoe" ? "uoe" : weak[0] === "mock" ? "mock" : "gram"]);
+      weak[0] === "read" || weak[0] === "listen" ? "input" : weak[0] === "vocab" ? "vocab" : weak[0] === "uoe" ? "uoe" : weak[0] === "mock" ? "mock" : "gram"]);
     if (P().mock.history.length === 0) steps.push(["Aún no has hecho un simulacro cronometrado", "mock"]);
     steps.slice(0, 4).forEach(([txt, dest]) => {
       nx.append(el("div", { class: "row", style: "justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding-bottom:8px" },

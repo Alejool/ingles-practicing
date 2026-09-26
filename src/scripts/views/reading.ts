@@ -17,14 +17,18 @@ import { renderPanel } from "./panel";
 import { montarDictado, pararDictado } from "./dictation";
 import { hablar, callar, hayVoz, hablando } from "../voice";
 import { compartidas, refrescar, publicar, contarLectura } from "../library";
+import { montarEscucha, pararEscucha, abrirAudio } from "./listening";
+import { crearPasos, navPasos, pantallaCompleta } from "../pasos";
 import type { GenText, ReadingText } from "../../data/types";
 
-type Sub = "hoy" | "biblioteca" | "generar" | "dictado" | "estrategia";
+type Sub = "hoy" | "escucha" | "biblioteca" | "generar" | "dictado" | "estrategia";
 
 let sub: Sub = "hoy";
 let refrescada = false;
 /** Qué texto se está leyendo: "b3" del banco, "g:<id>" de los generados. */
 let abierto: string | null = null;
+/** null = leyendo el texto; 0..n = respondiendo esa pregunta con el texto arriba. */
+let pregunta: number | null = null;
 
 /* ─────────────── acceso a los textos ─────────────── */
 
@@ -92,12 +96,18 @@ export function renderInput(): void {
   if (!out) return;
 
   const intent = takeIntent("input");
-  if (intent?.text !== undefined) {
+  if (intent?.listen !== undefined) {
+    sub = "escucha";
+    abrirAudio(intent.listen);
+  } else if (intent?.text !== undefined) {
     sub = "hoy";
     abierto = "b" + Math.min(T().readingCount - 1, intent.text);
   }
 
   out.innerHTML = "";
+  pantallaCompleta(pregunta !== null, "input");
+  // Respondiendo: la pantalla es del texto y su pregunta, sin submenús encima.
+  if (pregunta !== null && abierto && porClave(abierto)) { examen(out, porClave(abierto)!); return; }
   out.append(menu());
 
   /* La biblioteca común se refresca por detrás; si trae algo, se repinta sola. */
@@ -107,6 +117,13 @@ export function renderInput(): void {
   }
 
   /* Los textos van en su propio bundle. Si aún no están, se piden y se repinta. */
+  if (sub === "escucha") {
+    const host = el("div", {});
+    out.append(host);
+    montarEscucha(host);
+    return;
+  }
+
   if (!hayLecturas() && sub !== "estrategia" && sub !== "dictado") {
     out.append(el("div", { class: "card" },
       el("span", { class: "eyebrow" }, "Cargando"),
@@ -147,6 +164,7 @@ function menu(): HTMLElement {
   const pendientes = catalogo().filter(e => hechas(e) < e.text.qs.length).length;
   const opciones: Array<[Sub, string, string | null]> = [
     ["hoy", "La lectura de hoy", null],
+    ["escucha", "Escucha", T().listening.length + " audios"],
     ["biblioteca", "Biblioteca", catalogo().length + " textos"],
     ["generar", "Generar con IA", null],
     ["dictado", "Dictado", null],
@@ -155,7 +173,7 @@ function menu(): HTMLElement {
   opciones.forEach(([id, nombre, chip]) => {
     fila.append(el("button", {
       class: "btn " + (sub === id ? "" : "ghost") + " small", type: "button",
-      onclick: () => { pararDictado(); sub = id; renderInput(); },
+      onclick: () => { pararDictado(); pararEscucha(); sub = id; renderInput(); },
     },
       el("span", {}, nombre),
       chip ? el("span", { class: "chip", style: "margin-left:4px" }, chip) : null));
@@ -388,37 +406,104 @@ function lector(e: Entrada): HTMLElement {
       }, "He terminado de leerlo"),
       hayVoz() ? escucharBtn(e.text.body.join(" ")) : null)));
 
-  box.append(el("h3", { class: "h-sec", style: "margin:22px 0 8px;font-size:20px" }, "Preguntas"));
-
-  e.text.qs.forEach((q, j) => {
-    const key = e.key + ":" + j;
-    const rec = P().uoe[key];
-    box.append(el("div", { class: "sheet", "data-state": rec ? (rec.ok ? "ok" : "bad") : "" },
-      el("div", { class: "margin" },
-        el("span", { class: "qn" }, String(j + 1)),
-        el("span", { class: "glyph" }, rec ? (rec.ok ? "✓" : "✗") : "")),
-      el("div", { class: "body" },
-        el("div", { class: "qtext" }, q.q),
-        el("div", { class: "opts" }, q.o.map((o, k) => el("button", {
-          class: "opt", type: "button",
-          "data-pick": rec && rec.v === k ? "1" : null,
-          "data-res": rec ? (k === q.a ? "ok" : (rec.v === k ? "bad" : null)) : null,
-          disabled: rec ? "" : null,
-          onclick: () => { P().uoe[key] = { v: k, ok: k === q.a }; save(); bump("read", k === q.a); renderInput(); },
-        }, el("span", { class: "k" }, "ABCD"[k]), el("span", {}, o)))),
-        rec ? el("div", { class: "explain" }, el("span", { class: "tag" }, "Por qué"), el("span", { html: q.e })) : null)));
-  });
+  /* Las preguntas ya no van apiladas debajo: se contestan de una en una con el
+     texto delante, que es como se hace en el examen y como se puede en el móvil. */
+  const hechasYa = hechas(e);
+  const total = e.text.qs.length;
+  box.append(el("div", { class: "card", style: "margin-top:14px;text-align:center" },
+    el("span", { class: "eyebrow" }, "Comprensión"),
+    el("h3", { style: "margin:6px 0 8px" }, total + " preguntas sobre el texto"),
+    el("p", { class: "small" },
+      hechasYa === total
+        ? "Ya las has hecho todas. Puedes repasarlas una a una o reiniciarlas para volver a hacerlas en frío."
+        : "Se responden de una en una y el texto se queda arriba: puedes volver a mirarlo sin perder la pregunta."),
+    el("div", { class: "row", style: "justify-content:center;margin-top:12px" },
+      el("button", {
+        class: "btn", type: "button",
+        onclick: () => {
+          const i = e.text.qs.findIndex((_q, j) => !P().uoe[e.key + ":" + j]);
+          pregunta = i < 0 ? 0 : i;
+          renderInput();
+        },
+      }, hechasYa === 0 ? "Empezar las preguntas" : hechasYa === total ? "Repasarlas" : "Seguir (" + hechasYa + "/" + total + ")"),
+      hechasYa
+        ? el("button", {
+            class: "btn ghost", type: "button",
+            onclick: () => { e.text.qs.forEach((_q, j) => delete P().uoe[e.key + ":" + j]); save(); renderInput(); },
+          }, "Reiniciar")
+        : null)));
 
   box.append(el("div", { class: "row", style: "margin-top:14px" },
-    el("button", {
-      class: "btn ghost small", type: "button",
-      onclick: () => { e.text.qs.forEach((_q, j) => delete P().uoe[e.key + ":" + j]); save(); renderInput(); },
-    }, "Reiniciar las preguntas"),
     el("button", {
       class: "btn ghost small", type: "button",
       onclick: () => { sub = "biblioteca"; renderInput(); window.scrollTo({ top: 0, behavior: "smooth" }); },
     }, "Elegir otro texto")));
   return box;
+}
+
+/* ─────────────── el examen del texto ─────────────── */
+
+/**
+ * El texto arriba, la pregunta abajo, y nada más en pantalla.
+ *
+ * Lo importante es que el texto NO desaparece: se queda en su propio panel con
+ * su propio scroll, así que se puede releer el párrafo tercero mientras se
+ * contesta la pregunta cuatro, que es exactamente lo que uno hace en el examen.
+ */
+function examen(out: HTMLElement, e: Entrada): void {
+  const qs = e.text.qs;
+  const pasos = crearPasos(out, { alSalir: () => { pregunta = null; renderInput(); } });
+
+  const pintar = () => {
+    pasos.limpiar();
+    const j = pregunta as number;
+    const q = qs[j];
+    const key = e.key + ":" + j;
+    const rec = P().uoe[key];
+    pasos.progreso(hechas(e), qs.length, (j + 1) + " / " + qs.length);
+
+    const texto = el("div", { class: "lec-texto" },
+      el("h3", { style: "margin:0 0 10px;font-size:19px" }, e.text.title),
+      ...e.text.body.map(p => el("p", { class: "en", style: "margin-bottom:10px;line-height:1.6" }, p)));
+
+    const caja = el("div", { class: "opciones", style: "max-width:none" });
+    q.o.forEach((o, k) => {
+      const clase = rec ? (k === q.a ? " ok" : (rec.v === k ? " mal" : "")) : "";
+      caja.append(el("button", {
+        class: "opt" + clase, type: "button", disabled: rec ? "" : null,
+        onclick: () => {
+          P().uoe[key] = { v: k, ok: k === q.a };
+          save();
+          bump("read", k === q.a);
+          pintar();
+          pasos.medir();
+        },
+      }, el("span", { class: "k" }, "ABCD"[k]), el("span", {}, o)));
+    });
+
+    const abajo = el("div", { class: "lec-pregunta" },
+      el("div", { class: "qtext" }, q.q),
+      caja,
+      rec ? el("div", { class: "explain", style: "margin-top:10px;text-align:left" },
+        el("span", { class: "tag" }, rec.ok ? "Correcto · por qué" : "Por qué"), el("span", { html: q.e })) : null);
+
+    pasos.cuerpo.classList.add("lector");
+    pasos.cuerpo.append(texto, abajo);
+
+    pasos.pie.append(navPasos({
+      atras: j > 0 ? () => { pregunta = j - 1; pintar(); pasos.medir(); } : null,
+      siguiente: rec
+        ? (j + 1 < qs.length
+            ? () => { pregunta = j + 1; pintar(); pasos.medir(); }
+            : () => { pregunta = null; marcarLeido(e.key); tally("lecturas"); if (e.sharedId) contarLectura(e.sharedId); renderInput(); renderPanel(); })
+        : null,
+      textoSiguiente: j + 1 < qs.length ? "Siguiente ›" : "Terminar ›",
+      extra: rec ? null : el("span", { class: "tiny", style: "align-self:center" }, "Elige una respuesta"),
+    }));
+    pasos.medir();
+  };
+
+  pintar();
 }
 
 /* ─────────────── estrategia y escucha ─────────────── */

@@ -4,6 +4,7 @@ import { S } from "./state";
 import { TRACK_META, setTrack } from "./track";
 import { $, $$, el } from "./dom";
 import { anotarVisita } from "./pulse";
+import { callar } from "./voice";
 
 /** [id, número de módulo, etiqueta] — el id casa con el <section id="v-…">. */
 export const MODULES: Array<[string, string, string]> = [
@@ -21,6 +22,8 @@ export function setModuleRenderer(fn: (id: string) => void): void { repintar = f
 
 export function go(id: string): void {
   anotarVisita(id);
+  // Un audio no sigue sonando al cambiar de módulo.
+  callar();
   try { repintar(id); } catch (e) { console.error("[nav] falló al repintar", id, e); }
   $$(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + id));
   $$("#nav button").forEach(b => b.setAttribute("aria-current", String((b as HTMLElement).dataset.go === id)));

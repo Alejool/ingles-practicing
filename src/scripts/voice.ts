@@ -59,7 +59,6 @@ export interface HablarOpts {
   onError?: (motivo: string) => void;
 }
 
-let ultimo: SpeechSynthesisUtterance | null = null;
 
 /** Lee un texto en voz alta. Corta lo que estuviera sonando. */
 export async function hablar(texto: string, opts: HablarOpts = {}): Promise<void> {
@@ -72,22 +71,55 @@ export async function hablar(texto: string, opts: HablarOpts = {}): Promise<void
   if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = "en-GB"; }
   u.rate = opts.rate ?? 1;
   u.pitch = 1;
-  u.onend = () => { ultimo = null; opts.onFin?.(); };
+  u.onend = () => { opts.onFin?.(); };
   u.onerror = e => {
-    ultimo = null;
     // Cancelar a propósito dispara un error: eso no es un fallo que contar.
     if ((e as SpeechSynthesisErrorEvent).error === "canceled" || (e as SpeechSynthesisErrorEvent).error === "interrupted") return;
     opts.onError?.("No se pudo reproducir el audio.");
     opts.onFin?.();
   };
-  ultimo = u;
   speechSynthesis.speak(u);
+}
+
+/**
+ * Lee un guion de varias voces, línea a línea.
+ *
+ * A y B suenan con voces distintas si el navegador tiene al menos dos voces
+ * inglesas; si solo hay una, B va con el tono algo más grave para distinguirlas.
+ * `onLinea` avisa de qué línea suena, para resaltarla en el transcript.
+ */
+export async function hablarGuion(
+  lineas: Array<{ s: string; t: string }>,
+  opts: { rate?: number; onLinea?: (i: number) => void; onFin?: () => void; onError?: (m: string) => void } = {},
+): Promise<void> {
+  if (!hayVoz() || !lineas.length) { opts.onError?.("Este navegador no puede hablar."); return; }
+  const vs = await vocesInglesas();
+  callar();
+  const a = mejorVoz();
+  const b = vs.find(v => v !== a && /en-GB/i.test(v.lang)) || vs.find(v => v !== a) || null;
+  let viva = true;
+  lineas.forEach((l, i) => {
+    const u = new SpeechSynthesisUtterance(l.t);
+    const v = l.s === "B" ? (b || a) : a;
+    if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = "en-GB"; }
+    u.rate = opts.rate ?? 1;
+    u.pitch = l.s === "B" && !b ? 0.8 : 1;
+    u.onstart = () => { if (viva) opts.onLinea?.(i); };
+    u.onend = () => { if (viva && i === lineas.length - 1) opts.onFin?.(); };
+    u.onerror = e => {
+      const err = (e as SpeechSynthesisErrorEvent).error;
+      if (!viva) return;
+      viva = false;
+      if (err !== "canceled" && err !== "interrupted") opts.onError?.("No se pudo reproducir el audio.");
+      opts.onFin?.();
+    };
+    speechSynthesis.speak(u);
+  });
 }
 
 export function callar(): void {
   if (!hayVoz()) return;
   try { speechSynthesis.cancel(); } catch { /* ya estaba parado */ }
-  ultimo = null;
 }
 
 export function hablando(): boolean {

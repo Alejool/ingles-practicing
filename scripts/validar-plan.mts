@@ -57,13 +57,26 @@ for (const meta of TRACK_META) {
     writingIds: t.writing.map(w => w.id),
     speakingIds: t.speaking.map(s => s.id),
     readings: t.readingCount,
+    listening: t.listening.length,
   });
   if (dias.length !== 120) mal(t.id, `${dias.length} días construidos, se esperaban 120`);
   const textos = dias.flatMap(d => d.blocks.map(b => b.goto?.text)).filter((x): x is number => x !== undefined);
   if (textos.some(x => x < 0 || x >= t.readingCount)) mal(t.id, "un día de lectura apunta a un texto fuera de rango");
   if (new Set(textos).size !== textos.length && textos.length <= t.readingCount) mal(t.id, "se repite un texto de lectura habiendo textos sin usar");
 
-  console.log(`${t.name}: ${Object.entries(foco).map(([k, v]) => `${k} ${v}`).join(" · ")} · textos ${textos.join(",")}`);
+  const audios = dias.flatMap(d => d.blocks.map(b => b.goto?.listen)).filter((x): x is number => x !== undefined);
+  if (audios.length !== (foco.escucha || 0)) mal(t.id, `${(foco.escucha || 0) - audios.length} días de escucha sin audio`);
+  if (audios.some(x => x < 0 || x >= t.listening.length)) mal(t.id, "un día de escucha apunta a un audio fuera de rango");
+  const ids = new Set<string>();
+  t.listening.forEach(a => {
+    if (ids.has(a.id)) mal(t.id, `audio ${a.id} repetido`);
+    ids.add(a.id);
+    if (!a.lines.length) mal(t.id, `audio ${a.id} sin guion`);
+    if (a.lines.some(l => l.s === "B") && !a.speakers.B) mal(t.id, `audio ${a.id}: habla B pero no tiene nombre`);
+    a.qs.forEach((q, j) => { if (q.a < 0 || q.a >= q.o.length) mal(t.id, `audio ${a.id}, pregunta ${j + 1}: respuesta fuera de rango`); });
+  });
+
+  console.log(`${t.name}: ${Object.entries(foco).map(([k, v]) => `${k} ${v}`).join(" · ")} · textos ${textos.join(",")} · audios ${audios.join(",")}`);
 }
 
 if (fallos) {

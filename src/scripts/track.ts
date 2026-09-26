@@ -47,6 +47,7 @@ export function days(): Day[] {
       writingIds: t.writing.map(w => w.id),
       speakingIds: t.speaking.map(s => s.id),
       readings: t.readingCount,
+      listening: t.listening.length,
     });
   }
   return cache[t.id]!;
