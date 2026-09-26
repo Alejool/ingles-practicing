@@ -72,6 +72,17 @@ export function costeMicros(model: string, promptTokens: number, completionToken
 
 export interface QuotaLimits {
   anonLifetime: number;
+  /**
+   * "total" = los créditos de prueba se gastan una vez y se acaban (lo normal
+   * cuando hay cuentas: el siguiente paso es entrar con el correo).
+   * "dia"   = se renuevan cada día. Es lo que quieres si publicas la app sin
+   *           correo y sin cuentas: la gente entra, estudia y al día siguiente
+   *           vuelve a tener corrección. El techo en dólares sigue mandando.
+   */
+  anonWindow: "total" | "dia";
+  anonDaily: number;
+  /** Sin correo configurado no hay cuentas: cambia lo que se ofrece y lo que se dice. */
+  accountsEnabled: boolean;
   anonIpWindowDays: number;
   userDaily: number;
   userMonthly: number;
@@ -87,6 +98,10 @@ export interface QuotaLimits {
 export function limits(): QuotaLimits {
   return {
     anonLifetime: num("QUOTA_ANON_LIFETIME", 15),
+    anonWindow: (process.env.QUOTA_ANON_WINDOW || "").toLowerCase() === "dia" ? "dia" : "total",
+    anonDaily: num("QUOTA_ANON_DAILY", 20),
+    accountsEnabled: process.env.ACCOUNTS_ENABLED !== "false"
+      && (process.env.MAIL_PROVIDER || "log").toLowerCase() !== "none",
     anonIpWindowDays: num("QUOTA_ANON_IP_WINDOW_DAYS", 30),
     userDaily: num("QUOTA_USER_DAILY", 60),
     userMonthly: num("QUOTA_USER_MONTHLY", 900),
@@ -187,25 +202,36 @@ export async function readQuota(user: SessionUser | null, deviceId: string, ipHa
     };
   }
 
-  const byDevice = deviceId
+  // Con la ventana diaria solo cuenta lo de hoy; con la de siempre, todo.
+  const diaria = L.anonWindow === "dia";
+  const desdeDispositivo = diaria
+    ? `select coalesce(sum(cost_micros), 0)::bigint from ai_usage
+        where device_id = $1 and user_id is null and ok and day = current_date`
+    : `select coalesce(sum(cost_micros), 0)::bigint from ai_usage
+        where device_id = $1 and user_id is null and ok`;
+  const byDevice = deviceId ? await creditos(desdeDispositivo, [deviceId]) : 0;
+  const byIp = diaria
     ? await creditos(
-      `select coalesce(sum(cost_micros), 0)::bigint from ai_usage where device_id = $1 and user_id is null and ok`,
-      [deviceId])
-    : 0;
-  const byIp = await creditos(
-    `select coalesce(sum(cost_micros), 0)::bigint from ai_usage
-      where ip_hash = $1 and user_id is null and ok
-        and created_at >= now() - ($2 || ' days')::interval`,
-    [ipHash, String(L.anonIpWindowDays)]);
+      `select coalesce(sum(cost_micros), 0)::bigint from ai_usage
+        where ip_hash = $1 and user_id is null and ok and day = current_date`,
+      [ipHash])
+    : await creditos(
+      `select coalesce(sum(cost_micros), 0)::bigint from ai_usage
+        where ip_hash = $1 and user_id is null and ok
+          and created_at >= now() - ($2 || ' days')::interval`,
+      [ipHash, String(L.anonIpWindowDays)]);
 
   const used = Math.max(byDevice, byIp);
+  const tope = diaria ? L.anonDaily : L.anonLifetime;
+  const manana = new Date();
+  manana.setUTCHours(24, 0, 0, 0);
   return {
     authenticated: false,
     used,
-    limit: L.anonLifetime,
-    remaining: Math.max(0, L.anonLifetime - used),
-    window: "total",
-    resetsAt: null,
+    limit: tope,
+    remaining: Math.max(0, tope - used),
+    window: diaria ? "día" : "total",
+    resetsAt: diaria ? manana.toISOString() : null,
     ...comun,
   };
 }
@@ -265,12 +291,20 @@ export async function assertCanSpend(
         "Has agotado tu cuota mensual. Se renueva el día 1, o puedes usar tu propia clave en Ajustes.", { quota: state });
     }
   } else if (state.remaining <= 0) {
+    // Sin cuentas no tiene sentido invitar a entrar con el correo: lo que hay
+    // es esperar a mañana o poner la clave propia.
     throw new ApiError(402, "anon_limit",
-      `Has gastado los ${state.limit} créditos de prueba. Entra con tu correo para seguir; el resto de la app no necesita cuenta.`,
+      L.accountsEnabled
+        ? `Has gastado los ${state.limit} créditos de prueba. Entra con tu correo para seguir; el resto de la app no necesita cuenta.`
+        : L.anonWindow === "dia"
+          ? `Has gastado tus ${state.limit} créditos de hoy. Vuelven mañana, y el resto de la app sigue funcionando entera.`
+          : `Has gastado los ${state.limit} créditos de esta app. Puedes seguir con tu propia clave de DeepSeek desde Ajustes.`,
       { quota: state });
   } else if (state.remaining < coste) {
     throw new ApiError(402, "anon_limit",
-      `Te quedan ${state.remaining} créditos de prueba y esta tarea necesita unos ${coste}. Entra con tu correo y tendrás bastantes más.`,
+      L.accountsEnabled
+        ? `Te quedan ${state.remaining} créditos de prueba y esta tarea necesita unos ${coste}. Entra con tu correo y tendrás bastantes más.`
+        : `Te quedan ${state.remaining} créditos y esta tarea necesita unos ${coste}. Prueba con un texto más corto${L.anonWindow === "dia" ? ", o mañana" : ""}.`,
       { quota: state });
   }
 

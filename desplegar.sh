@@ -99,20 +99,34 @@ IA="$(preguntar "Pega la API key de DeepSeek (o Enter para saltar): " secreto)"
 [ -n "$IA" ] && ok "Recibida" || warn "Sin IA por ahora"
 
 # ── 4. el correo ─────────────────────────────────────────────────────
-paso "4 · El correo de acceso"
-say "La gente entra con un enlace que le llega por correo. Sin esto, nadie puede"
-say "crear cuenta (aunque sí estudiar sin cuenta, con el cupo de prueba)."
+paso "4 · ¿Con cuentas o sin ellas?"
+say "Con cuentas, cada persona entra con un enlace que le llega al correo y su"
+say "progreso la sigue entre el móvil y el ordenador. Hace falta un servicio de"
+say "envío y, para escribir a otras personas, un dominio verificado."
 say ""
-say "  ${C}https://resend.com${N}  →  API Keys  →  Create"
+say "Sin cuentas, cualquiera abre el enlace y estudia: el progreso se guarda en"
+say "su dispositivo y las correcciones van con un cupo diario. Cero registros."
 say ""
-CORREO="$(preguntar "Pega la API key de Resend (o Enter para saltar): " secreto)"
+say "  ${C}https://resend.com${N}  →  API Keys  →  Create   ${DIM}(solo si quieres cuentas)${N}"
+say ""
+CORREO="$(preguntar "Pega la API key de Resend (o Enter para publicarla sin cuentas): " secreto)"
 if [ -n "$CORREO" ]; then
   REMITE="$(preguntar "¿Desde qué dirección se manda? (ej: acceso@tudominio.com): ")"
   [ -n "$REMITE" ] || REMITE="onboarding@resend.dev"
-  ok "Correo listo · remitente $REMITE"
-  warn "Si ese dominio no está verificado en Resend, los correos irán a spam."
+  ok "Con cuentas · remitente $REMITE"
+  warn "Verifica ese dominio en Resend o los correos no llegarán a otras personas."
+  CUENTAS=1
 else
-  warn "Sin correo: nadie podrá abrir cuenta hasta que lo añadas."
+  CUENTAS=0
+  ok "Sin cuentas: se estudia sin registrarse"
+  say ""
+  say "${DIM}Como no hay cuentas, el cupo de IA es por dispositivo y por día. Cuántos"
+  say "créditos al día le das a cada persona: uno son unos \$0.0005, una corrección"
+  say "de writing gasta unos 3. Con 20 al día, cinco o seis correcciones por"
+  say "persona; el techo diario en dólares sigue mandando por encima.${N}"
+  CUPO="$(preguntar "Créditos por persona y día [20]: ")"
+  case "$CUPO" in ''|*[!0-9]*) CUPO=20 ;; esac
+  ok "$CUPO créditos por persona y día"
 fi
 
 # ── 5. secretos propios ──────────────────────────────────────────────
@@ -165,32 +179,62 @@ poner ADMIN_TOKEN      "$ADMIN"
 poner IP_PEPPER        "$PEPPER"
 poner APP_URL          "$URL"
 poner ALLOWED_ORIGINS  "$URL"
-if [ -n "$CORREO" ]; then
+if [ "$CUENTAS" = 1 ]; then
   poner MAIL_PROVIDER  "resend"
   poner RESEND_API_KEY "$CORREO"
   poner MAIL_FROM      "Ruta B1→B2 <$REMITE>"
+else
+  # Sin correo no hay cuentas: se dice explícitamente para que la app no ofrezca
+  # un registro que no funciona, y el cupo anónimo pasa a renovarse cada día.
+  poner ACCOUNTS_ENABLED   "false"
+  poner MAIL_PROVIDER      "none"
+  poner QUOTA_ANON_WINDOW  "dia"
+  poner QUOTA_ANON_DAILY   "$CUPO"
 fi
 ok "Variables puestas"
 
-# ── 8. publicar ──────────────────────────────────────────────────────
-paso "8 · Publicando"
-say "${DIM}Esto construye la app y la sube. Tarda un par de minutos.${N}"
+# ── 8. construir y subir ──────────────────────────────────────────────────────
+paso "8 · Construyendo aquí"
+say "${DIM}La app se construye en TU máquina y se sube ya construida. Nada de builds"
+say "remotos ni de conectar repositorios: lo que se publica es exactamente lo que"
+say "acabas de ver funcionar en local.${N}"
 say ""
-if [ "$PLAT" = netlify ]; then netlify deploy --prod; else vercel --prod; fi
+npm run build || die "El build ha fallado. Arriba tienes el error; pégamelo y lo miramos."
+[ -d dist ] && [ -f dist/index.html ] || die "El build no ha dejado dist/index.html."
+ok "Build hecho: $(find dist -type f | wc -l | tr -d ' ') archivos en dist/"
+
+paso "9 · Subiendo"
+say "${DIM}Se suben dist/ y las funciones. Un par de minutos.${N}"
+say ""
+if [ "$PLAT" = netlify ]; then
+  # --dir y --functions: se sube lo que hay en disco, sin pasar por su build.
+  netlify deploy --prod --dir=dist --functions=netlify/functions || die "La subida ha fallado."
+else
+  # Vercel construye en su nube salvo que le des el resultado ya hecho.
+  vercel build --prod || die "vercel build ha fallado."
+  vercel deploy --prebuilt --prod || die "La subida ha fallado."
+fi
 ok "Publicado"
 
-# ── 9. crear las tablas ──────────────────────────────────────────────
-paso "9 · Creando las tablas"
+# ── 10. crear las tablas ──────────────────────────────────────────────
+paso "10 · Creando las tablas"
 sleep 3
 if curl -fsS -X POST "$URL/api/admin?token=$ADMIN&op=schema" >/dev/null 2>&1; then
-  ok "Tablas creadas"
+  ok "Tablas creadas desde el sitio"
 else
-  warn "No respondió a la primera. Espera unos segundos y lanza:"
-  say "  curl -X POST \"$URL/api/admin?token=$ADMIN&op=schema\""
+  # Si el endpoint no contesta todavía, da igual: el esquema se puede aplicar
+  # desde aquí, que tu máquina sí llega a la base de datos.
+  say "${DIM}El sitio aún no contesta; las creo yo directamente contra la base.${N}"
+  if DATABASE_URL="$DB" npm run migrate >/dev/null 2>&1; then
+    ok "Tablas creadas desde tu máquina"
+  else
+    warn "No pude crearlas. Cuando el sitio responda, lanza:"
+    say "  curl -X POST \"$URL/api/admin?token=$ADMIN&op=schema\""
+  fi
 fi
 
-# ── 10. comprobar ────────────────────────────────────────────────────
-paso "10 · Comprobando que quedó bien"
+# ── 11. comprobar ────────────────────────────────────────────────────
+paso "11 · Comprobando que quedó bien"
 SALUD="$(curl -fsS "$URL/healthz" 2>/dev/null || echo '')"
 case "$SALUD" in
   *'"ok":true'*) ok "La app responde y llega a la base de datos" ;;
@@ -202,7 +246,7 @@ else
   ok "Ninguna clave sale al navegador"
 fi
 
-# ── 11. dónde queda todo ─────────────────────────────────────────────
+# ── 12. dónde queda todo ─────────────────────────────────────────────
 FICHA=".despliegue.txt"
 {
   echo "Ruta B1 → B2 · datos del despliegue"
@@ -224,5 +268,17 @@ say "  Panel:  ${C}$URL/admin.html${N}  ${DIM}(te pedirá el ADMIN_TOKEN)${N}"
 say ""
 say "  Tus dos secretos están en ${B}$FICHA${N} — guárdalo y no lo subas a git."
 say ""
-say "Ahora, cinco minutos a mano: abre la app en el móvil, pide el enlace con tu"
-say "correo, corrige un texto y mira que el gasto aparece en el panel."
+say ""
+if [ "$CUENTAS" = 1 ]; then
+  say "Ahora, cinco minutos a mano: abre la app en el móvil, pide el enlace con tu"
+  say "correo, corrige un texto y mira que el gasto aparece en el panel."
+else
+  say "Ahora, cinco minutos a mano: abre la app en el móvil, haz el día 1, corrige"
+  say "un texto y mira que el gasto aparece en el panel."
+  say ""
+  say "${DIM}Para compartirla, manda esa dirección y ya está: quien la abra estudia sin"
+  say "registrarse. Su progreso vive en su dispositivo, así que dile que la instale"
+  say "(menú del navegador → «Instalar aplicación») y que no borre los datos del"
+  say "sitio. Si algún día quieres cuentas y sincronización, vuelve a lanzar esto"
+  say "con una clave de Resend.${N}"
+fi

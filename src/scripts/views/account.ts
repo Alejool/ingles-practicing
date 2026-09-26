@@ -6,7 +6,6 @@ import { pullAndMerge, flush, onSyncStatus, syncStatus, resetSyncVersion } from 
 import { usesOwnKey } from "../ai";
 import { go } from "../nav";
 
-let sent: string | null = null;
 
 function quotaCard(q: api.Quota | null): HTMLElement {
   if (!q) {
@@ -27,7 +26,11 @@ function quotaCard(q: api.Quota | null): HTMLElement {
   ];
   if (!q.authenticated) {
     kids.push(el("p", { class: "small", style: "margin-top:10px" },
-      "Sin cuenta tienes un cupo de prueba por dispositivo. Con tu correo pasa a ser diario y bastante más amplio."));
+      api.cuentasActivas()
+        ? "Sin cuenta tienes un cupo de prueba por dispositivo. Con tu correo pasa a ser diario y bastante más amplio."
+        : q.window === "día"
+          ? "Tienes un cupo diario por dispositivo: se renueva cada día. Si te sabe a poco, pon tu propia clave de DeepSeek en Ajustes."
+          : "Tienes un cupo por dispositivo para probar las correcciones. Cuando se acabe, puedes seguir con tu propia clave de DeepSeek desde Ajustes."));
   }
   if (q.globalRemaining <= 0) {
     kids.push(el("p", { class: "small", style: "margin-top:10px;color:var(--bad)" },
@@ -49,7 +52,6 @@ function signInCard(): HTMLElement {
     out.innerHTML = "";
     try {
       const res = await api.requestLoginLink(email);
-      sent = email;
       if (res.delivery === "mailbox") {
         // Docker trae un buzón local: el correo no sale a internet, se queda ahí.
         const url = res.mailboxUrl || "http://localhost:8025";
@@ -131,6 +133,24 @@ export function renderAccount(): void {
       el("span", { class: "eyebrow" }, "Clave propia activa"),
       el("h3", { style: "margin:6px 0 8px" }, "No estás gastando la cuota compartida"),
       el("p", { class: "small" }, "Tienes configurada tu propia clave de DeepSeek en Ajustes, así que las correcciones van por tu cuenta y sin límite de la app. La sesión sigue sirviendo para sincronizar el progreso.")));
+  }
+
+  // Instalación sin correo: no hay enlace que mandar, así que en vez del
+  // formulario se explica cómo funciona esto y dónde vive el progreso.
+  if (!api.cuentasActivas()) {
+    out.append(el("div", { class: "card" },
+      el("span", { class: "eyebrow" }, "Esta copia no usa cuentas"),
+      el("h3", { style: "margin:6px 0 8px" }, "Se estudia sin registrarse"),
+      el("p", { class: "small" },
+        "No hay que dar el correo ni crear nada: entras y estudias. Tu progreso —los días hechos, las tarjetas, " +
+        "el cuaderno de palabras— se guarda en este dispositivo y no se va a ningún servidor."),
+      el("p", { class: "small", style: "margin-top:10px" },
+        "Como no hay cuenta, el progreso tampoco viaja solo entre el móvil y el ordenador. Para llevártelo, " +
+        "en Ajustes tienes «Exportar copia» y «Importar copia»."),
+      el("div", { class: "row", style: "margin-top:12px" },
+        el("button", { class: "btn small", type: "button", onclick: () => go("ajustes") }, "Ir a Ajustes"))));
+    out.append(el("div", { style: "margin-top:12px" }, quotaCard(s.quota)));
+    return;
   }
 
   out.append(s.user ? accountCard(s.user.email) : signInCard());

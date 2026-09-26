@@ -5,7 +5,7 @@
  * queda en los logs del proxy, y la app lo borra de la barra en cuanto lo lee.
  */
 
-import { fail, ApiError, sha256Hex } from "./_http.mts";
+import { sha256Hex } from "./_http.mts";
 import { createSession } from "./_auth.mts";
 import { q, one } from "./_db.mts";
 

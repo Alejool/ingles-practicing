@@ -154,14 +154,26 @@ function emit(next: SessionInfo): void {
 let hayApi: boolean | null = null;
 export function apiDisponible(): boolean | null { return hayApi; }
 
+/**
+ * ¿Hay cuentas?
+ *
+ * Una instalación sin correo configurado no puede mandar el enlace de acceso,
+ * así que no ofrece registrarse: se estudia sin cuenta y el progreso vive en el
+ * dispositivo. El servidor lo dice y la interfaz se adapta.
+ */
+let hayCuentas = true;
+export function cuentasActivas(): boolean { return hayCuentas; }
+
 export async function refreshSession(): Promise<SessionInfo> {
   try {
     const data = await get("/api/auth/session");
     hayApi = true;
+    if (typeof data.accounts === "boolean") hayCuentas = data.accounts;
     emit({ user: data.user ?? null, quota: data.quota ?? null });
   } catch (e) {
-    // 404/405 con cuerpo que no es de la API: no hay backend, no es un fallo.
-    if (e instanceof ApiError && (e.status === 404 || e.status === 405)) hayApi = false;
+    // Un 404, un 405 o un 501 en la sesión significan que detrás no hay API:
+    // la app está publicada como archivos sueltos. No es una avería.
+    if (e instanceof ApiError && [404, 405, 501].includes(e.status)) hayApi = false;
     if (e instanceof ApiError && e.status === 401) {
       setSessionToken(null);
       emit({ user: null, quota: null });

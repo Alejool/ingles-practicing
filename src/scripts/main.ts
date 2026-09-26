@@ -60,7 +60,11 @@ export function renderAll(): void {
 }
 
 /* Enlaces que romperían el grafo de imports si viviesen en sus módulos. */
-setModuleRenderer(id => { PINTA[id]?.(); });
+setModuleRenderer(id => {
+  // Salir de Vocabulario por el menú también cierra la tanda a pantalla completa.
+  if (id !== "vocab") document.body.classList.remove("sesion-activa");
+  PINTA[id]?.();
+});
 setStatsListener(renderPanel);
 setAfterImport(renderAll);
 setMergeListener(renderAll);
@@ -155,6 +159,10 @@ async function arrancar(): Promise<void> {
 
   startSync();
   api.refreshSession().then(async s => {
+    if (!api.cuentasActivas()) {
+      const b = document.querySelector('#nav button[data-go="cuenta"] span:last-child');
+      if (b) b.textContent = "Tu cupo";
+    }
     refreshAi();
     renderAccount();
     if (s.user) {

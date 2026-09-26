@@ -33,21 +33,37 @@ quien ya la usaba no se toca: vive en su dispositivo.
 
 ### B · Para compartirla con otras personas
 
-Aquí sí hace falta lo demás: base de datos para las cuentas y el progreso,
-correo para el enlace de acceso, y los límites de gasto para que nadie te vacíe
-la cuenta de DeepSeek. Un comando:
+Aquí hace falta un servidor: la base de datos y los límites de gasto, para que
+nadie te vacíe la cuenta de DeepSeek. El correo es opcional, y esa es la
+decisión que te va a preguntar el script:
+
+- **Sin cuentas** (lo más simple): mandas el enlace, quien lo abra estudia sin
+  registrarse y su progreso se guarda en su dispositivo. Las correcciones van
+  con un cupo por persona y día que tú eliges. No hace falta ni dominio ni
+  servicio de correo.
+- **Con cuentas**: cada quien entra con un enlace que le llega al correo y su
+  progreso le sigue del móvil al ordenador. Necesita una clave de Resend y, para
+  escribir a otras personas, un dominio verificado.
+
+Un comando:
 
 ```bash
 bash desplegar.sh
 ```
 
 Va preguntando y hace el resto: instala lo que falte, crea el sitio, genera tus
-secretos, configura las variables, publica, crea las tablas y comprueba que
-quedó bien. Lo que aportas tú son dos registros gratis —Neon para la base,
+secretos, configura las variables, **construye la app aquí en tu máquina**, sube
+el resultado, crea las tablas y comprueba que quedó bien. Sin repositorio y sin
+builds remotos: se publica exactamente lo que acabas de ver funcionar en local. Lo que aportas tú son dos registros gratis —Neon para la base,
 Resend para el correo— y pegar sus claves cuando las pida.
 
 Cuando termine te deja la dirección de la app, la del panel de administración y
 un `.despliegue.txt` con tus dos secretos.
+
+En el modo sin cuentas, dile a quien la use que **la instale** (menú del
+navegador → «Instalar aplicación») y que no borre los datos del sitio: ahí vive
+su progreso. Si algún día quieres cuentas y sincronización, vuelves a lanzar el
+script con una clave de Resend y no se pierde nada.
 
 ---
 
@@ -143,13 +159,22 @@ Si quieres otros, están todos comentados en `.env.example`; se ponen igual.
 
 ### 4. Publicar y crear las tablas
 
+Se construye **en tu máquina** y se sube ya construido: Netlify no recompila
+nada, solo recibe la carpeta. Nada de repositorios ni de builds remotos.
+
 ```bash
-netlify deploy --prod
+npm run build
+netlify deploy --prod --dir=dist --functions=netlify/functions
 curl -X POST "https://ruta.tudominio.com/api/admin?token=$ADMIN_TOKEN&op=schema"
 ```
 
 Ese `curl` devuelve `Esquema aplicado (N sentencias)`. Es idempotente: se puede
-repetir sin miedo cada vez que actualices.
+repetir sin miedo cada vez que actualices. Y si el sitio aún no contesta, las
+tablas se crean igual desde tu máquina, que también llega a Neon:
+
+```bash
+DATABASE_URL='postgresql://…' npm run migrate
+```
 
 ### 5. El dominio
 
@@ -200,10 +225,16 @@ Variables*.
 
 ### 4. Publicar y crear las tablas
 
+`vercel --prod` a secas construiría el proyecto en su nube. Para subir el build
+que ya tienes hecho y probado aquí:
+
 ```bash
-vercel --prod
+vercel build --prod
+vercel deploy --prebuilt --prod
 curl -X POST "https://ruta.tudominio.com/api/admin?token=$ADMIN_TOKEN&op=schema"
 ```
+
+Y si ese `curl` no contesta todavía:  `DATABASE_URL='…' npm run migrate`
 
 ### 5. El dominio
 
@@ -395,11 +426,12 @@ A mano, lo que de verdad importa:
 ## Actualizar más adelante
 
 ```bash
-git pull
-netlify deploy --prod                 # camino A
-vercel --prod                         # camino B
-bash start.sh restart                 # camino C
-curl -X POST "$BASE/api/admin?token=$ADMIN_TOKEN&op=schema"   # si cambió el esquema
+npm run build                                                  # siempre primero
+netlify deploy --prod --dir=dist --functions=netlify/functions # camino A
+vercel build --prod && vercel deploy --prebuilt --prod         # camino B
+bash start.sh restart                                          # camino C
+curl -X POST "$BASE/api/admin?token=$ADMIN_TOKEN&op=schema"    # si cambió el esquema
+# …o, si el sitio no contesta:  DATABASE_URL='…' npm run migrate
 ```
 
 `CACHE_VERSION` se calcula sola en cada build, así que a la gente le sale el

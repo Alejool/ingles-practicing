@@ -10,9 +10,9 @@
  * actualizan al final, cuando DeepSeek los envía en el último evento.
  */
 
-import { preflight, corsHeaders, json, fail, ApiError, clientIp, hashIp, readJson, deviceId, num } from "./_http.mts";
+import { preflight, corsHeaders, fail, ApiError, clientIp, hashIp, readJson, deviceId, num } from "./_http.mts";
 import { currentUser } from "./_auth.mts";
-import { assertCanSpend, recordUsage, readQuota, limits, costeMicros, creditosEstimados } from "./_quota.mts";
+import { assertCanSpend, readQuota, limits, costeMicros, creditosEstimados } from "./_quota.mts";
 import { q } from "./_db.mts";
 import { buildMessages, isKind, PayloadError } from "../../shared/prompts.ts";
 
@@ -34,7 +34,7 @@ export default async (req: Request): Promise<Response> => {
     const ipHash = await hashIp(clientIp(req));
     const user = await currentUser(req);
 
-    let messages;
+    let messages: Array<{ role: string; content: string }>;
     try {
       messages = buildMessages(kind, body?.payload ?? {});
     } catch (e) {

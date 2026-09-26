@@ -12,7 +12,7 @@ import { buildMessages, PayloadError } from "../../shared/prompts";
 import type { AiKind } from "../../shared/prompts";
 import * as api from "./api";
 import { S, save, touchDay } from "./state";
-import { $, $$, el, toast } from "./dom";
+import { $$, el, toast } from "./dom";
 import { go } from "./nav";
 import { encolar, setLanzador, setAviso, arrancarCola } from "./queue";
 
@@ -128,6 +128,7 @@ export function aiCopy(e: any): string {
 
 /** Los límites de cuota son los únicos errores que se resuelven entrando. */
 export function needsAccount(e: any): boolean {
+  if (!api.cuentasActivas()) return false;   // sin cuentas, no hay a dónde mandar a nadie
   return e?.code === "anon_limit" || e?.code === "not_authenticated";
 }
 
@@ -174,7 +175,7 @@ export async function streamAi(kind: AiKind, payload: any, opts: StreamOptions =
   let res: Response;
   try {
     if (own) {
-      let messages;
+      let messages: Array<{ role: string; content: string }>;
       try {
         messages = buildMessages(kind, payload);
       } catch (e) {
@@ -213,7 +214,7 @@ export async function streamAi(kind: AiKind, payload: any, opts: StreamOptions =
     } catch { /* respuesta sin cuerpo JSON */ }
     // Un 404 que ni siquiera devuelve JSON de la API significa que detrás no hay
     // backend: la app está publicada como archivos sueltos. No es una avería.
-    if (!own && !esJson && (res.status === 404 || res.status === 405)) {
+    if (!own && !esJson && ([404, 405, 501].includes(res.status) || api.apiDisponible() === false)) {
       throw new AiError("sin_servidor", "");
     }
     throw new AiError(code, message, undefined, data);
@@ -287,6 +288,11 @@ export async function ask(kind: AiKind, payload: any, out: HTMLElement, btn?: HT
       if (needsAccount(e)) {
         pane.append(el("div", { style: "margin-top:10px" },
           el("button", { class: "btn small", type: "button", onclick: () => go("cuenta") }, "Entrar con mi correo")));
+      }
+      // Sin cuentas y sin créditos, la salida es la clave propia.
+      if (e.code === "anon_limit" && !api.cuentasActivas()) {
+        pane.append(el("div", { style: "margin-top:10px" },
+          el("button", { class: "btn small", type: "button", onclick: () => go("ajustes") }, "Usar mi propia clave")));
       }
       if (e.code === "sin_servidor") {
         pane.append(el("div", { style: "margin-top:10px" },

@@ -8,6 +8,7 @@
 import { preflight, json, fail, ApiError, clientIp, hashIp, readJson, sha256Hex, randomToken, num, safeReturnTo } from "./_http.mts";
 import { normaliseEmail } from "./_auth.mts";
 import { q, scalar } from "./_db.mts";
+import { limits } from "./_quota.mts";
 import { sendLoginLink, deliveryMode } from "./_mail.mts";
 
 export default async (req: Request): Promise<Response> => {
@@ -15,6 +16,12 @@ export default async (req: Request): Promise<Response> => {
   if (pre) return pre;
   try {
     if (req.method !== "POST") throw new ApiError(405, "method_not_allowed", "Método no permitido.");
+    // Publicada sin correo: no hay cuentas que crear, y decirlo claro es mejor
+    // que aceptar el correo y no mandar nada.
+    if (!limits().accountsEnabled) {
+      throw new ApiError(404, "accounts_off",
+        "Esta instalación no usa cuentas: se estudia sin registrarse y el progreso se guarda en tu dispositivo.");
+    }
     const body = await readJson(req, 4096);
     const email = normaliseEmail(body?.email);
     const ipHash = await hashIp(clientIp(req));
