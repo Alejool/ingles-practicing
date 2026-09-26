@@ -4,9 +4,21 @@ App instalable (PWA) para preparar exámenes de certificación de inglés B1/B2
 —Cambridge B1 Preliminary y B2 First, IELTS, TOEFL, Aptis, Linguaskill—
 hecha con **Astro 7 + TypeScript**, con API propia y **PostgreSQL**.
 
-- **Todo el material es libre y sin cuenta**: diagnóstico, plan de 24 semanas, 18 unidades de
-  gramática, 154 tarjetas con repetición espaciada, Use of English, writing, speaking, lectura y
-  simulacro. Funciona sin conexión.
+- **Dos rutas, cada una con su plan de 24 semanas (120 sesiones de 45 min)**: A2 → B1
+  (14 unidades de gramática, 500 tarjetas) y B1 → B2 (18 unidades, 594 tarjetas), con
+  diagnóstico, repetición espaciada, Use of English, writing, speaking, 20 lecturas, 8 audios
+  de escucha y 4 simulacros por ruta. Todo libre y sin cuenta. Funciona sin conexión.
+- **Escucha sin ficheros de audio**: los guiones los lee la voz del navegador, con una voz
+  por hablante, y se trabajan en tres pases (sin texto, con preguntas, con transcript).
+  Cada día de escucha del plan abre su audio.
+- **El plan, en un documento**: [`docs/plan-de-estudio.html`](docs/plan-de-estudio.html)
+  tiene las dos rutas semana a semana, con el material de cada día, el formato del examen y
+  las metas de cada simulacro.
+
+| Comando | Qué hace |
+|---|---|
+| `npm run test:plan` | comprueba que el plan de las dos rutas se sostiene (semanas, unidades, mazos, lecturas, audios) |
+| `npm run plan:export` | regenera `docs/plan-de-estudio.html` a partir de los datos de la app |
 - **La clave de DeepSeek nunca llega al navegador.** Las correcciones pasan por `/api/ai/chat`,
   que compone los prompts en el servidor y aplica cuotas.
 - **Cuenta solo cuando hace falta**: se estudia sin registrarse; al agotar el cupo de prueba de
@@ -199,8 +211,9 @@ el estudio funciona en el navegador. Las correcciones con IA necesitan servidor,
 o tu propia clave de DeepSeek en Ajustes.
 
 **Para compartirla:** `bash desplegar.sh`, que pregunta lo justo y hace el resto
-—sitio, variables, publicación, tablas y comprobaciones—. Los pasos, en
-**[DESPLIEGUE.md](DESPLIEGUE.md)**. Aquí va el resumen.
+—sitio, variables, build en tu máquina, subida, tablas y comprobaciones—. No usa
+repositorio ni builds remotos: se publica lo que acabas de construir aquí. Los
+pasos, en **[DESPLIEGUE.md](DESPLIEGUE.md)**. Aquí va el resumen.
 
 Hay dos caminos y el mismo código sirve para los dos: las funciones son handlers estándar
 (`Request` → `Response`), y `server/index.mts` se limita a enrutarlas.
