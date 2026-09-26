@@ -10,6 +10,6 @@ dist/
 !.env.example
 
 # La base en carpeta (DB_DRIVER=pglite) y las copias de seguridad.
-data/
+/data/
 backups/*.gz
 .despliegue.txt
