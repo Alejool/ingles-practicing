@@ -1,0 +1,53 @@
+import type { MockPaper } from "../types";
+
+export const MOCK: MockPaper ={
+ p1:{title:"Parte 1 · Multiple-choice cloze",intro:"Elige la palabra que encaja mejor en cada hueco. Se evalúa colocación y matiz léxico.",
+ text:["Remote work has ",{n:1}," a normal part of many industries, but the transition has not been ",{n:2},
+ " for everyone. Companies that had spent decades ",{n:3}," on face-to-face supervision suddenly had to ",{n:4},
+ " trust in people they could no longer see. Some managers responded by installing monitoring software, a decision that ",{n:5},
+ " out to be counterproductive: employees who feel watched tend to ",{n:6}," their attention to looking busy rather than to doing useful work. The organisations that adapted best were those that ",
+ {n:7}," clear goals and then left their teams alone, on the ",{n:8}," that results matter more than hours."],
+ items:[
+ {n:1,o:["become","turned","made","grown"],a:0,e:"<b>become</b> + sustantivo. <i>turn</i> necesitaría <i>into</i>."},
+ {n:2,o:["smooth","soft","plain","flat"],a:0,e:"<b>a smooth transition</b> es la colocación fija."},
+ {n:3,o:["relying","trusting","counting","leaning"],a:0,e:"<b>rely on</b>. <i>count on</i> existe pero no colocaría con <i>decades ___ on supervision</i> tan naturalmente; y <i>trust</i> no lleva <i>on</i>."},
+ {n:4,o:["place","make","do","give"],a:0,e:"<b>place / put trust in someone</b>."},
+ {n:5,o:["turned","came","went","ended"],a:0,e:"<b>turn out to be</b> = resultar ser."},
+ {n:6,o:["shift","move","pass","drive"],a:0,e:"<b>shift one's attention to</b> es la colocación natural."},
+ {n:7,o:["set","put","gave","held"],a:0,e:"<b>set goals</b>."},
+ {n:8,o:["basis","ground","cause","point"],a:0,e:"<b>on the basis that</b> + oración."}]},
+ p2:{title:"Parte 2 · Open cloze",intro:"Escribe UNA sola palabra en cada hueco. Casi siempre es gramatical: artículo, preposición, relativo, auxiliar o conector.",
+ text:["Language learning apps have made a great deal ",{n:9}," money by promising results without effort. In reality, no method can do ",
+ {n:10}," with practice. ",{n:11}," matters is not the tool but how often it is used. Learners who study for ten minutes every day almost always overtake ",
+ {n:12}," who manage three hours once a month. ",{n:13}," you choose an app, a textbook or a teacher, it is consistency ",
+ {n:14}," decides the outcome — and consistency is far ",{n:15}," difficult to build ",{n:16}," it sounds."],
+ items:[
+ {n:9,a:["of"],e:"<b>a great deal of</b> + incontable."},
+ {n:10,a:["away"],e:"<b>do away with</b> = eliminar, prescindir de."},
+ {n:11,a:["what"],e:"Cleft: <b>What matters is…</b>"},
+ {n:12,a:["those"],e:"<b>those who</b> = «los que»."},
+ {n:13,a:["whether"],e:"<b>Whether … or …</b> ante alternativas."},
+ {n:14,a:["that","which"],e:"Cleft con <i>it is … that</i>."},
+ {n:15,a:["more"],e:"Comparativo de adjetivo largo."},
+ {n:16,a:["than"],e:"Segundo término de la comparación."}]},
+ p3:{title:"Parte 3 · Word formation",intro:"Transforma la palabra de la derecha para que encaje en la frase. Cuidado con prefijos negativos y con el plural.",
+ items:[
+ {n:17,s:"The proposal was rejected on purely ______ grounds.",root:"FINANCE",a:["financial"],e:"Sustantivo → adjetivo en <i>-ial</i>."},
+ {n:18,s:"Her ______ to the project was obvious to everyone.",root:"COMMIT",a:["commitment"],e:"Verbo → sustantivo <i>-ment</i>, con doble <i>t</i>."},
+ {n:19,s:"The instructions were badly written and highly ______ .",root:"MISLEAD",a:["misleading"],e:"Participio presente como adjetivo."},
+ {n:20,s:"We were impressed by the ______ of the whole team.",root:"EFFICIENT",a:["efficiency"],e:"Adjetivo → sustantivo <i>-ency</i>."},
+ {n:21,s:"He behaved ______ throughout the negotiation.",root:"PROFESSION",a:["professionally"],e:"Sustantivo → adjetivo <i>-al</i> → adverbio <i>-ly</i>."},
+ {n:22,s:"There has been a marked ______ in code quality.",root:"IMPROVE",a:["improvement"],e:"Verbo → sustantivo contable <i>-ment</i>."},
+ {n:23,s:"That timeline is completely ______ given our budget.",root:"REAL",a:["unrealistic"],e:"<i>real → realistic → unrealistic</i>. Prefijo negativo <i>un-</i>."},
+ {n:24,s:"Their ______ to any kind of change is the main obstacle.",root:"RESIST",a:["resistance"],e:"Verbo → sustantivo <i>-ance</i>."}]},
+ p4:{title:"Parte 4 · Key word transformations",intro:"Entre DOS y CINCO palabras, incluida la palabra clave, que no puede cambiarse.",
+ items:[
+ {n:25,s1:"\"I'm really sorry I shouted at you,\" he said.",key:"APOLOGISED",s2:"He ______________ at me.",a:["apologised for shouting","apologized for shouting"],e:"<b>apologise for + -ing</b>."},
+ {n:26,s1:"You needn't have brought your laptop.",key:"NECESSARY",s2:"It ______________ your laptop.",a:["wasn't necessary to bring","was not necessary to bring"],e:"<i>needn't have + participio</i> → no era necesario, pero lo hiciste."},
+ {n:27,s1:"They are repainting the office next week.",key:"HAVING",s2:"They ______________ next week.",a:["are having the office repainted"],e:"Causativo: <b>have something done</b>."},
+ {n:28,s1:"I have never been to a worse restaurant.",key:"WORST",s2:"That is ______________ ever been to.",a:["the worst restaurant i've","the worst restaurant i have"],e:"Superlativo + present perfect de experiencia."},
+ {n:29,s1:"Nobody expected him to resign.",key:"TOOK",s2:"His resignation ______________ surprise.",a:["took everybody by","took everyone by"],e:"<b>take somebody by surprise</b>, expresión fija."},
+ {n:30,s1:"It was a mistake to accept that offer.",key:"HAVE",s2:"I ______________ that offer.",a:["shouldn't have accepted","should not have accepted"],e:"<b>should have + participio</b> en negativa para el reproche."},
+ {n:31,s1:"The meeting was cancelled because of the strike.",key:"DUE",s2:"The meeting ______________ the strike.",a:["was cancelled due to","was canceled due to"],e:"<b>due to</b> + sustantivo, equivalente formal de <i>because of</i>."},
+ {n:32,s1:"I only understood the problem when I read the documentation.",key:"UNTIL",s2:"Not ______________ I understand the problem.",a:["until i read the documentation did"],e:"Inversión tras <i>Not until</i> en posición inicial."}]}
+};
