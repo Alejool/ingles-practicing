@@ -20,6 +20,7 @@ import {
 import { renderPanel } from "./panel";
 import { setIntent } from "../intent";
 import { go } from "../nav";
+import { tiene, anadirCarta } from "../mine";
 import type { Day, DayBlock, StepGoto } from "../../data/types";
 
 const NUM: Record<number, string> = { 1: "un", 2: "dos", 3: "tres", 4: "cuatro", 5: "cinco", 6: "seis" };
@@ -111,11 +112,28 @@ function vocabulario(day: Day): HTMLElement {
   function paint(): void {
     list.innerHTML = "";
     slice.forEach(i => {
-      const [term, ipa, es, ex] = deck!.cards[i];
-      list.append(el("div", { style: "padding:9px 0;border-bottom:1px solid var(--line)" },
-        el("div", { class: "row", style: "justify-content:space-between;gap:12px;align-items:baseline" },
-          el("span", { class: "en", style: "font-size:17px" }, term),
-          ipa ? el("span", { class: "mono tiny" }, ipa) : null),
+      const card = deck!.cards[i];
+      const [term, ipa, es, ex] = card;
+      const key = deck!.id + ":" + i;
+      const p = P();
+      p.known ??= {};
+      const sabida = !!p.known[key];
+      const dificil = !!tiene(term);
+      list.append(el("div", { style: "padding:9px 0;border-bottom:1px solid var(--line)" + (sabida ? ";opacity:.55" : "") },
+        el("div", { class: "row", style: "justify-content:space-between;gap:12px;align-items:center" },
+          el("label", { class: "row", style: "gap:10px;align-items:center;cursor:pointer" },
+            el("input", {
+              type: "checkbox", checked: sabida ? "" : null, title: "Ya me la sé",
+              onchange: () => { p.known[key] = !sabida; save(); paint(); },
+            }),
+            el("span", { class: "en", style: "font-size:17px" + (sabida ? ";text-decoration:line-through" : "") }, term)),
+          el("div", { class: "row", style: "gap:10px;align-items:center" },
+            ipa ? el("span", { class: "mono tiny" }, ipa) : null,
+            el("button", {
+              class: "btn ghost small", type: "button", disabled: dificil ? "" : null,
+              title: "Llevarla al cuaderno de difíciles (repetición espaciada)",
+              onclick: () => { anadirCarta(card, deck!.name); toast("«" + term + "» va a tus difíciles"); paint(); },
+            }, dificil ? "✓ en difíciles" : "Difícil"))),
         shown ? el("div", { class: "small", style: "margin-top:3px" }, es) : null,
         shown && ex ? el("div", { style: "font-family:var(--f-display);font-style:italic;font-size:15px;color:var(--ink-2);margin-top:3px" }, "“" + ex + "”") : null));
     });

@@ -44,6 +44,8 @@ export interface TrackProgress {
   read: Record<string, number>;
   /** Pruebas rápidas. */
   quiz: { best: number | null; history: QuizRun[] };
+  /** Tarjetas del plan marcadas como leídas: known["core:12"] = true */
+  known: Record<string, boolean>;
 }
 
 export function blankTrack(): TrackProgress {
@@ -52,6 +54,7 @@ export function blankTrack(): TrackProgress {
     srs: {}, gram: {}, uoe: {}, mock: { best: null, history: [] }, writing: {}, stats: {},
     steps: {}, counters: {},
     mine: [], gen: [], read: {}, quiz: { best: null, history: [] },
+    known: {},
   };
 }
 
