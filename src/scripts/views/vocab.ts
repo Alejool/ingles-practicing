@@ -322,13 +322,15 @@ function pregunta(d: Deck, turno: Turno, c: Card, cuerpo: HTMLElement, pie: HTML
     const campo: 0 | 2 = alReves ? 0 : 2;
     const correcta = c[campo];
     const opciones = barajar([correcta, ...distractores(d, turno.i, campo)]);
-    cuerpo.append(
+    // append() del DOM escribe "null": filtrar los huecos (p. ej. cartas sin IPA).
+    cuerpo.append(...[
       etiqueta(alReves ? "¿Cómo se dice?" : "¿Qué significa?"),
       el("div", { class: "ses-term" }, alReves ? es : term),
       !alReves && ipa ? el("div", { class: "ipa" }, ipa) : null,
       !alReves && hayVoz()
         ? el("button", { class: "btn ghost small", style: "margin-top:10px", type: "button", onclick: () => hablar(term, { rate: 0.9 }) }, "♪ Oírla")
-        : null);
+        : null,
+    ].filter((n): n is HTMLElement => n !== null));
     const caja = el("div", { class: "opciones" });
     opciones.forEach(o => {
       caja.append(el("button", {
