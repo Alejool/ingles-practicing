@@ -398,9 +398,9 @@ function calendario(): HTMLElement {
       // ratón se queda pequeño, que es donde caben las 24 semanas de un vistazo.
       row.append(el("button", {
         type: "button", class: "dcell", title: "Día " + d.n + " · " + d.t,
-        style: "border:1px solid " + (d.n === hoy ? "var(--mark)" : done ? "var(--ok)" : "var(--line-2)") + ";" +
-          "background:" + (done ? "var(--ok-soft)" : d.n === hoy ? "var(--mark)" : "var(--surface)") + ";" +
-          "color:" + (done ? "var(--ok)" : d.n === hoy ? "var(--mark-ink)" : "var(--ink-3)"),
+        style: "border:1px solid " + (d.n === hoy ? "var(--on-fill)" : done ? "var(--ok)" : "var(--line-2)") + ";" +
+          "background:" + (done ? "var(--ok-soft)" : d.n === hoy ? "var(--fill)" : "var(--surface)") + ";" +
+          "color:" + (done ? "var(--ok)" : d.n === hoy ? "var(--on-fill)" : "var(--ink-3)"),
         onclick: () => { setOpenDay(d.n); render(); window.scrollTo({ top: 0, behavior: "smooth" }); },
       }, String(d.n)));
     });
