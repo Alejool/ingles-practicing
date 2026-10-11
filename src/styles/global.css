@@ -210,6 +210,8 @@ td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .timer{font-family:var(--f-mono);font-size:15px;font-variant-numeric:tabular-nums;padding:4px 10px;border:1px solid var(--line-2);border-radius:var(--rs)}
 .timer.hot{color:var(--bad);border-color:var(--bad)}
 .hidden{display:none!important}
+/* Fuera de la vista pero dentro del árbol accesible: lo lee el lector de pantalla. */
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:99px;font-size:13.5px;z-index:50;box-shadow:var(--shadow)}
 .progline{display:flex;gap:3px;flex-wrap:wrap}
 .progline i{width:11px;height:11px;border-radius:2px;background:var(--surface-3);display:block}
@@ -237,6 +239,17 @@ td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
   .trackpick button{flex:1}
   .trackpick .twho{display:none}
 }
+
+/* ---------- diálogo ----------
+   La caja va en la capa superior del navegador: no empuja el contenido ni
+   bloquea el scroll de la página. Si no cabe, se desplaza ella. El velo usa el
+   color del fondo y no un negro: en los dos temas la página se apaga hacia su
+   propio papel. */
+.dlg{width:min(560px,calc(100vw - 24px));max-width:none;max-height:90dvh;overflow-y:auto;padding:20px 18px;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r);box-shadow:var(--shadow)}
+.dlg::backdrop{background:var(--paper);opacity:.8}
+.dlg-t{font-size:23px;letter-spacing:-.01em;margin-bottom:12px;overflow-wrap:anywhere}
+/* Navegador sin `showModal`: la misma caja, fija arriba y sin velo. */
+.dlg-enlinea{display:block;position:fixed;inset:12px 0 auto;margin:0 auto;z-index:70}
 
 /* ---------- retos, racha e insignias ---------- */
 .reto{display:flex;flex-direction:column;gap:8px}

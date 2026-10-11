@@ -36,9 +36,21 @@ export function esc(s: unknown): string {
   return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
 }
 
+/**
+ * Dice un mensaje a los lectores de pantalla desde la región viva `#anuncio`.
+ * Se vacía antes de escribir: repetir el mismo texto sin ese hueco no se anuncia.
+ */
+export function anunciar(mensaje: string): void {
+  const region = $("#anuncio");
+  if (!region) return;
+  region.textContent = "";
+  setTimeout(() => { region.textContent = mensaje; }, 50);
+}
+
 export function toast(msg: string): void {
   const t = el("div", { class: "toast" }, msg);
   document.body.append(t);
+  anunciar(msg);
   setTimeout(() => t.remove(), 2400);
 }
 
