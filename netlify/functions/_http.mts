@@ -56,11 +56,52 @@ export function fail(req: Request, e: unknown): Response {
   return json(req, { error: { code: "server_error", message: "Error interno" } }, 500);
 }
 
-/** IP del cliente detrás del proxy de Netlify. */
+/**
+ * Dónde está corriendo esto. Se mira en variables que pone la propia
+ * plataforma, nunca en la petición: una cabecera la escribe quien quiera.
+ * `PLATAFORMA_API` la fija `server/index.mts` al arrancar, y por eso manda.
+ */
+function plataforma(): "node" | "vercel" | "netlify" | "" {
+  const env = process.env;
+  if (env.PLATAFORMA_API === "node") return "node";
+  if (env.VERCEL) return "vercel";
+  if (env.NETLIFY || env.NETLIFY_DEV || env.SITE_ID || "Netlify" in globalThis) return "netlify";
+  return "";
+}
+
+/**
+ * IP del cliente, leída solo de la cabecera que escribe la plataforma en la que
+ * estamos. `X-Forwarded-For` la manda el cliente y no se mira nunca aquí: con
+ * ella bastaba cambiar un valor para estrenar cuota en cada petición.
+ *
+ * En una plataforma que no se reconoce no hay cabecera de fiar: todo el mundo
+ * cae en la misma IP, que es compartir cupo pero no regalarlo.
+ */
 export function clientIp(req: Request): string {
   const h = req.headers;
-  const fwd = h.get("x-nf-client-connection-ip") || h.get("x-forwarded-for") || "";
-  return fwd.split(",")[0].trim() || "0.0.0.0";
+  const donde = plataforma();
+  const ip =
+    // Netlify la escribe en su borde; en Docker la pisa `server/index.mts`.
+    donde === "netlify" || donde === "node" ? h.get("x-nf-client-connection-ip") :
+    donde === "vercel" ? h.get("x-vercel-forwarded-for") || h.get("x-real-ip") :
+    "";
+  return (ip || "").split(",")[0].trim() || "0.0.0.0";
+}
+
+/**
+ * IP del cliente en el servidor propio, a partir del socket.
+ *
+ * `saltos` es cuántos proxies nuestros hay delante (TRUST_PROXY). Cada uno
+ * añade al final de `X-Forwarded-For` la IP que vio de verdad, así que la del
+ * cliente es la que queda tras descontar esos saltos desde la derecha. Lo que
+ * haya más a la izquierda lo pudo escribir el cliente y no cuenta.
+ */
+export function ipDeProxy(remoto: string, reenviado: string, saltos: number): string {
+  const limpia = (s: string) => s.trim().replace(/^::ffff:/, "");
+  const socket = limpia(remoto) || "0.0.0.0";
+  if (saltos <= 0) return socket;
+  const cadena = [...reenviado.split(",").map(limpia).filter(Boolean), socket];
+  return cadena[Math.max(0, cadena.length - 1 - saltos)];
 }
 
 /** Hash con pimienta: identifica sin guardar la IP en claro. */

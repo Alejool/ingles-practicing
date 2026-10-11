@@ -19,6 +19,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 
 import { q, migrate, closeDb } from "../netlify/functions/_db.mts";
+import { ipDeProxy } from "../netlify/functions/_http.mts";
 
 const gzip = promisify(zlib.gzip);
 
@@ -26,7 +27,15 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const STATIC_DIR = process.env.STATIC_DIR || path.join(ROOT, "dist");
 const PORT = Number(process.env.PORT || 8080);
 const HOST = process.env.HOST || "0.0.0.0";
-const TRUST_PROXY = process.env.TRUST_PROXY === "true";
+/**
+ * Cuántos proxies nuestros hay delante: `true` es uno (lo habitual, un nginx o
+ * un Caddy), un número es esa cantidad (por ejemplo 2 con un CDN delante del
+ * proxy). Sin la variable no se cree ninguna cabecera y manda el socket.
+ */
+const TRUST_PROXY = process.env.TRUST_PROXY === "true" ? 1 : Math.max(0, parseInt(process.env.TRUST_PROXY || "", 10) || 0);
+
+// Las funciones leen la IP de la cabecera que este servidor pisa en cada petición.
+process.env.PLATAFORMA_API = "node";
 
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
@@ -64,12 +73,7 @@ async function loadRoutes(): Promise<Route[]> {
 }
 
 function clientIp(req: http.IncomingMessage): string {
-  if (TRUST_PROXY) {
-    const fwd = String(req.headers["x-forwarded-for"] || "");
-    const first = fwd.split(",")[0].trim();
-    if (first) return first;
-  }
-  return (req.socket.remoteAddress || "0.0.0.0").replace(/^::ffff:/, "");
+  return ipDeProxy(req.socket.remoteAddress || "", String(req.headers["x-forwarded-for"] || ""), TRUST_PROXY);
 }
 
 async function toWebRequest(req: http.IncomingMessage, url: URL): Promise<Request> {
