@@ -12,7 +12,7 @@
 
 import { preflight, corsHeaders, fail, ApiError, clientIp, hashIp, readJson, deviceId, num } from "./_http.mts";
 import { currentUser } from "./_auth.mts";
-import { assertCanSpend, readQuota, limits, costeMicros, creditosEstimados } from "./_quota.mts";
+import { reservar, anularReserva, readQuota, limits, costeMicros } from "./_quota.mts";
 import { q } from "./_db.mts";
 import { buildMessages, isKind, PayloadError } from "../../shared/prompts.ts";
 
@@ -42,37 +42,37 @@ export default async (req: Request): Promise<Response> => {
       throw e;
     }
 
-    await assertCanSpend(user, dev, ipHash, kind, model);
-
     const L = limits();
     // La fila se abre ANTES de llamar, con el coste estimado ya cargado: si la
     // respuesta se corta a mitad, la llamada ha consumido cuota igualmente.
-    const reserva = creditosEstimados(kind, model) * L.creditMicros;
-    const usageRow = await q<{ id: string }>(
-      `insert into ai_usage (user_id, device_id, ip_hash, kind, model, cost_micros)
-       values ($1, $2, $3, $4, $5, $6) returning id`,
-      [user?.id ?? null, dev || null, ipHash, kind, model, reserva]
-    );
-    const usageId = usageRow[0]?.id;
+    const { id: usageId } = await reservar(user, dev, ipHash, kind, model);
 
-    const upstream = await fetch(process.env.DEEPSEEK_URL || "https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY || ""}` },
-      body: JSON.stringify({
-        model,
-        messages,
-        stream: true,
-        stream_options: { include_usage: true },
-        temperature: kind === "test" ? 0 : 1,
-        max_tokens: Math.min(num("AI_MAX_TOKENS", L.maxTokens), 4096),
-      }),
-    });
+    let upstream: Response;
+    try {
+      upstream = await fetch(process.env.DEEPSEEK_URL || "https://api.deepseek.com/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY || ""}` },
+        body: JSON.stringify({
+          model,
+          messages,
+          stream: true,
+          stream_options: { include_usage: true },
+          temperature: kind === "test" ? 0 : 1,
+          max_tokens: Math.min(num("AI_MAX_TOKENS", L.maxTokens), 4096),
+        }),
+      });
+    } catch (e) {
+      // Ni siquiera se llegó al proveedor (red caída, DNS, tiempo agotado): tampoco se cobra.
+      console.error("[ai] sin conexión con el proveedor", e);
+      await anularReserva(usageId);
+      throw new ApiError(502, "provider_error", "El servicio de IA no está respondiendo. Inténtalo en un momento.");
+    }
 
     if (!upstream.ok || !upstream.body) {
       const detail = (await upstream.text().catch(() => "")).slice(0, 500);
       console.error("[ai] upstream", upstream.status, detail);
       // No se le cobra a nadie una llamada que el proveedor rechazó.
-      if (usageId) await q(`update ai_usage set ok = false where id = $1`, [usageId]).catch(() => {});
+      await anularReserva(usageId).catch(e => console.error("[ai] no se pudo anular la reserva", e));
       const code = upstream.status === 402 ? "provider_no_credit" : "provider_error";
       const msg = upstream.status === 402
         ? "El servicio de IA se ha quedado sin saldo. Avisa a quien administra la app."

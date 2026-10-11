@@ -166,17 +166,29 @@ async function creditos(sql: string, params: unknown[]): Promise<number> {
 }
 
 export async function readQuota(user: SessionUser | null, deviceId: string, ipHash: string): Promise<QuotaState> {
+  return (await medir(user, deviceId, ipHash)).state;
+}
+
+/**
+ * El estado, más lo que le queda al despliegue SIN recortar a cero: negativo
+ * significa cuánto se ha pasado. `reservar` lo necesita para distinguir «cabe
+ * justo» de «ya no cabía»; hacia fuera se sigue enseñando recortado.
+ */
+async function medir(
+  user: SessionUser | null, deviceId: string, ipHash: string,
+): Promise<{ state: QuotaState; globalLibre: number }> {
   const L = limits();
 
   const gastadoHoy = Number(await scalar(
     `select coalesce(sum(cost_micros), 0)::bigint from ai_usage where day = current_date and ok`, [])) || 0;
   const spentTodayUsd = gastadoHoy / 1e6;
   const globalUsados = Math.ceil(gastadoHoy / L.creditMicros);
-  const porCreditos = Math.max(0, L.globalDaily - globalUsados);
+  const porCreditos = L.globalDaily - globalUsados;
   const porDinero = L.globalDailyUsd > 0
-    ? Math.max(0, Math.floor(((L.globalDailyUsd * 1e6) - gastadoHoy) / L.creditMicros))
+    ? Math.floor(((L.globalDailyUsd * 1e6) - gastadoHoy) / L.creditMicros)
     : Infinity;
-  const globalRemaining = Math.min(porCreditos, porDinero);
+  const globalLibre = Math.min(porCreditos, porDinero);
+  const globalRemaining = Math.max(0, globalLibre);
 
   const comun = { globalRemaining, spentTodayUsd, budgetUsd: L.globalDailyUsd };
 
@@ -190,15 +202,18 @@ export async function readQuota(user: SessionUser | null, deviceId: string, ipHa
     const tomorrow = new Date();
     tomorrow.setUTCHours(24, 0, 0, 0);
     return {
-      authenticated: true,
-      used: daily,
-      limit: dailyLimit,
-      remaining: Math.max(0, dailyLimit - daily),
-      window: "día",
-      resetsAt: tomorrow.toISOString(),
-      monthlyUsed: monthly,
-      monthlyLimit: L.userMonthly,
-      ...comun,
+      globalLibre,
+      state: {
+        authenticated: true,
+        used: daily,
+        limit: dailyLimit,
+        remaining: Math.max(0, dailyLimit - daily),
+        window: "día",
+        resetsAt: tomorrow.toISOString(),
+        monthlyUsed: monthly,
+        monthlyLimit: L.userMonthly,
+        ...comun,
+      },
     };
   }
 
@@ -226,13 +241,16 @@ export async function readQuota(user: SessionUser | null, deviceId: string, ipHa
   const manana = new Date();
   manana.setUTCHours(24, 0, 0, 0);
   return {
-    authenticated: false,
-    used,
-    limit: tope,
-    remaining: Math.max(0, tope - used),
-    window: diaria ? "día" : "total",
-    resetsAt: diaria ? manana.toISOString() : null,
-    ...comun,
+    globalLibre,
+    state: {
+      authenticated: false,
+      used,
+      limit: tope,
+      remaining: Math.max(0, tope - used),
+      window: diaria ? "día" : "total",
+      resetsAt: diaria ? manana.toISOString() : null,
+      ...comun,
+    },
   };
 }
 
@@ -249,7 +267,26 @@ export async function assertCanSpend(
   kind = "error",
   model = "deepseek-chat",
 ): Promise<QuotaState> {
+  return comprobar(user, deviceId, ipHash, kind, model, false);
+}
+
+/**
+ * Las cuatro barreras. Con `reservada`, la fila de esta llamada ya está escrita
+ * y todas las sumas la incluyen: se descuenta para hacer exactamente las mismas
+ * preguntas que antes de escribirla, pero viendo también lo que hayan reservado
+ * los demás entretanto.
+ */
+async function comprobar(
+  user: SessionUser | null,
+  deviceId: string,
+  ipHash: string,
+  kind: string,
+  model: string,
+  reservada: boolean,
+): Promise<QuotaState> {
   const L = limits();
+  const coste = creditosEstimados(kind, model);
+  const propia = reservada ? coste : 0;
 
   // 1 · ritmo
   const recent = Number(await scalar(
@@ -257,19 +294,21 @@ export async function assertCanSpend(
       where created_at > now() - interval '60 seconds'
         and (($1 <> '' and device_id = $1) or ip_hash = $2)`,
     [deviceId, ipHash])) || 0;
-  if (recent >= L.perMinute) {
+  if (recent - (reservada ? 1 : 0) >= L.perMinute) {
     throw new ApiError(429, "too_fast", "Vas muy rápido. Espera un minuto y vuelve a intentarlo.");
   }
 
-  const state = await readQuota(user, deviceId, ipHash);
-  const coste = creditosEstimados(kind, model);
+  const { state, globalLibre } = await medir(user, deviceId, ipHash);
+  // Sin recortar a cero: si entre todos se han pasado, tiene que salir negativo.
+  const libreGlobal = globalLibre + propia;
+  const libre = state.limit - state.used + propia;
 
   // 4 y 3 · el despliegue (se comprueban antes que lo personal para dar el mensaje correcto)
-  if (state.globalRemaining <= 0) {
+  if (libreGlobal <= 0) {
     throw new ApiError(503, "global_limit",
       "Hoy se ha alcanzado el límite de uso compartido de la app. Vuelve mañana o usa tu propia clave en Ajustes.");
   }
-  if (state.globalRemaining < coste) {
+  if (libreGlobal < coste) {
     throw new ApiError(503, "global_limit",
       "Al presupuesto compartido de hoy ya no le cabe una tarea de este tamaño. Prueba mañana, con algo más corto, " +
       "o pon tu propia clave en Ajustes.");
@@ -277,20 +316,20 @@ export async function assertCanSpend(
 
   // 2 · persona
   if (user) {
-    if (state.remaining <= 0) {
+    if (libre <= 0) {
       throw new ApiError(429, "user_daily_limit",
         `Has gastado tus ${state.limit} créditos de hoy. Se renuevan a medianoche.`, { quota: state });
     }
-    if (state.remaining < coste) {
+    if (libre < coste) {
       throw new ApiError(429, "user_daily_limit",
-        `Te quedan ${state.remaining} créditos y esta tarea necesita unos ${coste}. Prueba con un texto más corto, ` +
+        `Te quedan ${libre} créditos y esta tarea necesita unos ${coste}. Prueba con un texto más corto, ` +
         "con el modelo rápido, o mañana.", { quota: state });
     }
-    if ((state.monthlyUsed ?? 0) >= (state.monthlyLimit ?? Infinity)) {
+    if ((state.monthlyUsed ?? 0) - propia >= (state.monthlyLimit ?? Infinity)) {
       throw new ApiError(429, "user_monthly_limit",
         "Has agotado tu cuota mensual. Se renueva el día 1, o puedes usar tu propia clave en Ajustes.", { quota: state });
     }
-  } else if (state.remaining <= 0) {
+  } else if (libre <= 0) {
     // Sin cuentas no tiene sentido invitar a entrar con el correo: lo que hay
     // es esperar a mañana o poner la clave propia.
     throw new ApiError(402, "anon_limit",
@@ -300,15 +339,66 @@ export async function assertCanSpend(
           ? `Has gastado tus ${state.limit} créditos de hoy. Vuelven mañana, y el resto de la app sigue funcionando entera.`
           : `Has gastado los ${state.limit} créditos de esta app. Puedes seguir con tu propia clave de DeepSeek desde Ajustes.`,
       { quota: state });
-  } else if (state.remaining < coste) {
+  } else if (libre < coste) {
     throw new ApiError(402, "anon_limit",
       L.accountsEnabled
-        ? `Te quedan ${state.remaining} créditos de prueba y esta tarea necesita unos ${coste}. Entra con tu correo y tendrás bastantes más.`
-        : `Te quedan ${state.remaining} créditos y esta tarea necesita unos ${coste}. Prueba con un texto más corto${L.anonWindow === "dia" ? ", o mañana" : ""}.`,
+        ? `Te quedan ${libre} créditos de prueba y esta tarea necesita unos ${coste}. Entra con tu correo y tendrás bastantes más.`
+        : `Te quedan ${libre} créditos y esta tarea necesita unos ${coste}. Prueba con un texto más corto${L.anonWindow === "dia" ? ", o mañana" : ""}.`,
       { quota: state });
   }
 
   return state;
+}
+
+/**
+ * Comprueba la cuota y abre la fila de la llamada sin dejar hueco entre las
+ * dos cosas. Lanza lo mismo que `assertCanSpend` si no cabe.
+ *
+ * Comprobar y luego insertar dejaba pasar a todas las peticiones que llegaran
+ * a la vez: ninguna veía la fila de las otras. Aquí se hace al revés. Primero
+ * se comprueba sin escribir —lo normal cuando no cabe, y así un rechazo no deja
+ * rastro—; si cabe, se escribe la reserva con su coste estimado y se vuelve a
+ * comprobar contando ya lo de todos. De dos peticiones simultáneas, la segunda
+ * comprobación de al menos una ocurre con las dos filas confirmadas, así que
+ * nunca pasan las dos por un hueco de una. Lo que puede ocurrir es lo
+ * contrario: que justo en el borde se rechacen las dos. Quien pierde se queda
+ * con la fila anulada, que no cobra.
+ *
+ * No es un `insert … select … where` condicional porque en Postgres cada
+ * sentencia ve la base como estaba al empezar: dos a la vez pasan las dos. Y
+ * no es un `pg_advisory_xact_lock` porque necesita una transacción de varias
+ * sentencias en la misma conexión, y `q` no la da: neon va por HTTP sentencia a
+ * sentencia y pg reparte cada consulta por el pool. Esto solo pide que cada
+ * sentencia se confirme sola, que es lo que hacen los tres drivers.
+ */
+export async function reservar(
+  user: SessionUser | null,
+  deviceId: string,
+  ipHash: string,
+  kind = "error",
+  model = "deepseek-chat",
+): Promise<{ id: string; state: QuotaState }> {
+  await comprobar(user, deviceId, ipHash, kind, model, false);
+
+  const reserva = creditosEstimados(kind, model) * limits().creditMicros;
+  const filas = await q<{ id: string }>(
+    `insert into ai_usage (user_id, device_id, ip_hash, kind, model, cost_micros)
+     values ($1, $2, $3, $4, $5, $6) returning id`,
+    [user?.id ?? null, deviceId || null, ipHash, kind, model, reserva]
+  );
+  const id = filas[0].id;
+
+  try {
+    return { id, state: await comprobar(user, deviceId, ipHash, kind, model, true) };
+  } catch (e) {
+    await anularReserva(id);
+    throw e;
+  }
+}
+
+/** Deja una reserva sin cobrar: la llamada no llegó a hacerse o el proveedor la rechazó. */
+export async function anularReserva(id: string): Promise<void> {
+  await q(`update ai_usage set ok = false where id = $1`, [id]);
 }
 
 export async function recordUsage(opts: {
