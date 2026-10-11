@@ -62,7 +62,11 @@ const out = $("#out"), msg = $("#msg");
 let TOKEN = sessionStorage.getItem("admin-tok") || "";
 if (TOKEN) { $("#tok").value = TOKEN; $("#rec").checked = true; }
 
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+// Marcado que arma el propio panel (barras, botones). Es lo único que tabla() no escapa:
+// un dato de la API nunca puede ser una instancia de esta clase.
+class Propio { constructor(html) { this.html = html; } }
+const propio = html => new Propio(html);
 const n = v => (v ?? 0).toLocaleString("es");
 const usd = v => "$" + Number(v ?? 0).toFixed(4);
 
@@ -78,7 +82,7 @@ function tabla(cols, filas, clase) {
   return '<div class="tw"><table><thead><tr>' + cols.map(c => "<th>" + esc(c) + "</th>").join("") +
     "</tr></thead><tbody>" + filas.map(f =>
       '<tr' + (clase && clase(f) ? ' class="' + clase(f) + '"' : "") + ">" +
-      f.map(c => "<td>" + (typeof c === "string" && c.startsWith("<") ? c : esc(c)) + "</td>").join("") + "</tr>").join("") +
+      f.map(c => "<td>" + (c instanceof Propio ? c.html : esc(c)) + "</td>").join("") + "</tr>").join("") +
     "</tbody></table></div>";
 }
 
@@ -109,35 +113,36 @@ function pinta(d) {
     '<p class="muted">Cada tramo son diez días del plan: 1 = días 1–10, 2 = 11–20…</p>' +
     tabla(["Ruta", "Tramo", "Personas", "", "Días hechos (media)", "Activas 7 d"],
       (u.embudo || []).map(e => [e.track, "" + e.tramo, n(e.personas),
-        '<div class="bar" style="width:' + Math.round(e.personas / maxTramo * 160) + 'px"></div>',
+        propio('<div class="bar" style="width:' + Math.round(e.personas / maxTramo * 160) + 'px"></div>'),
         n(e.dias_hechos_medio), n(e.activos_7d)])) +
 
     "<h2>Módulos que se abren</h2>" +
     tabla(["Módulo", "Personas", "", "% de las personas"],
       (u.modulos_abiertos || []).map(m => [m.modulo, n(m.personas),
-        '<div class="bar" style="width:' + Math.round(m.personas / maxMod * 160) + 'px"></div>',
+        propio('<div class="bar" style="width:' + Math.round(m.personas / maxMod * 160) + 'px"></div>'),
         (r.personas ? Math.round(m.personas / r.personas * 100) : 0) + "%"])) +
 
     "<h2>Biblioteca compartida</h2>" +
     '<p class="muted">Textos que genera la gente y que ven los demás. Ocultar uno lo saca de la biblioteca al instante.</p>' +
     tabla(["#", "Ruta", "Nivel", "Título", "Palabras", "Leídas", "Día", "Autor", ""],
-      (d.biblioteca || []).map(b => [b.id, b.track, b.level, b.title, n(b.words), n(b.reads), b.dia, b.autor || "—",
-        '<button class="s" data-hide="' + b.id + '" data-show="' + (b.hidden ? 1 : 0) + '">' +
-        (b.hidden ? "Mostrar" : "Ocultar") + "</button>"]),
+      (d.biblioteca || []).map((b, i) => [b.id, b.track, b.level, b.title, n(b.words), n(b.reads), b.dia, b.autor || "—",
+        // El botón solo lleva el índice de la fila: el id del texto no entra en el HTML.
+        propio('<button class="s" data-fila="' + i + '">' + (b.hidden ? "Mostrar" : "Ocultar") + "</button>")]),
       f => (d.biblioteca.find(b => b.id === f[0])?.hidden ? "oculto" : "")) +
 
     "<h2>Mantenimiento</h2>" +
     '<div class="row"><button id="schema" type="button">Aplicar el esquema de la base</button>' +
     '<button id="limpiar" type="button">Borrar los datos de prueba</button>' +
-    '<span class="muted">Crédito: ' + usd(p.credito_usd) + " · " + n(p.creditos_dia_por_cuenta) + " créditos/día por cuenta · " +
-    n(p.creditos_prueba) + " de prueba sin cuenta</span></div>";
+    '<span class="muted">Crédito: ' + usd(p.credito_usd) + " · " + esc(n(p.creditos_dia_por_cuenta)) + " créditos/día por cuenta · " +
+    esc(n(p.creditos_prueba)) + " de prueba sin cuenta</span></div>";
 
   out.hidden = false;
 
-  out.querySelectorAll("[data-hide]").forEach(b => b.addEventListener("click", async () => {
+  out.querySelectorAll("[data-fila]").forEach(b => b.addEventListener("click", async () => {
+    const texto = d.biblioteca[Number(b.dataset.fila)];
     b.disabled = true;
     try {
-      await api("&op=hide&id=" + b.dataset.hide + (b.dataset.show === "1" ? "&show=1" : ""), { method: "POST" });
+      await api("&op=hide&id=" + encodeURIComponent(texto.id) + (texto.hidden ? "&show=1" : ""), { method: "POST" });
       cargar();
     } catch (e) { aviso(e.message, true); b.disabled = false; }
   }));
