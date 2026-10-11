@@ -22,13 +22,20 @@ export function diaActual(dias: Record<string, boolean>, totalDias: number): num
   return totalDias;
 }
 
-/** "día 37 de 120", o "sin empezar" si la ruta no tiene días, tarjetas ni diagnóstico. */
+/** "día 37 de 120", o "sin empezar" si en la ruta no hay nada hecho en ningún módulo. */
 export function resumenProgreso(p: Partial<TrackProgress> | undefined, totalDias: number): string {
   const dias = p?.days ?? {};
+  const hay = (o: object | undefined) => Object.keys(o ?? {}).length > 0;
   const empezada = Object.values(dias).some(Boolean)
-    || Object.keys(p?.srs ?? {}).length > 0
+    || hay(p?.srs)
     || !!p?.diag?.done
-    || Object.keys(p?.diag?.answers ?? {}).length > 0;
+    || hay(p?.diag?.answers)
+    || Object.values(p?.gram ?? {}).some(hay)
+    || hay(p?.uoe)
+    || hay(p?.read)
+    || (p?.mock?.history.length ?? 0) > 0
+    || (p?.quiz?.history.length ?? 0) > 0
+    || Object.values(p?.writing ?? {}).some(w => w.text.trim() !== "");
   return empezada ? `día ${diaActual(dias, totalDias)} de ${totalDias}` : "sin empezar";
 }
 
@@ -98,6 +105,7 @@ export function reducir(e: EstadoSelector, a: Accion, ctx: { haySesionQueSePierd
     case "error":
       if (a.t === "cancelar") return ESTADO_INICIAL(e.activa);
       if (a.t === "reintentar") return { ...e, fase: "cargando", error: null };
+      if (a.t === "volver") return { ...ESTADO_INICIAL(e.activa), fase: "lista" };
       return e;
   }
 }
@@ -136,7 +144,8 @@ export function opciones(
   }));
 }
 
-export interface Aviso { clase: "progreso" | "construccion" | "sesion" | "ia"; texto: string }
+/** `sesion` = algo en curso que se pierde; `informa` = algo en curso que se retoma después. */
+export interface Aviso { clase: "progreso" | "construccion" | "sesion" | "informa" | "ia"; texto: string }
 
 /** Lo que se lee antes del botón de confirmar, en el orden en que se lee. */
 export function avisos(origen: MetaRuta, destino: MetaRuta, sesiones: SesionActiva[], iaEnCurso: boolean): Aviso[] {
@@ -149,7 +158,7 @@ export function avisos(origen: MetaRuta, destino: MetaRuta, sesiones: SesionActi
   }
   for (const s of sesiones) {
     if (s.tipo === "ia") continue;
-    lista.push({ clase: "sesion", texto: [`Tienes en curso: ${s.nombre}.`, s.pierde, s.conserva].filter(Boolean).join(" ") });
+    lista.push({ clase: s.pierde ? "sesion" : "informa", texto: [`Tienes en curso: ${s.nombre}.`, s.pierde, s.conserva].filter(Boolean).join(" ") });
   }
   if (iaEnCurso || sesiones.some(s => s.tipo === "ia")) {
     lista.push({ clase: "ia", texto: "Hay una respuesta de la IA en camino y se cancela al cambiar. El texto que ya está guardado se conserva." });
@@ -167,6 +176,52 @@ export function textoCasilla(sesiones: SesionActiva[]): string {
   const nombres = sesiones.filter(s => s.pierde !== "").map(s => s.nombre);
   const ultimo = nombres.pop();
   return "Entiendo que pierdo lo que tengo a medias en " + (nombres.length ? nombres.join(", ") + " y " + ultimo : ultimo);
+}
+
+/** El día del plan está a medias: hay pasos marcados y quedan pasos por marcar. */
+export function planAMedias(pasosMarcados: number, total: number): boolean {
+  return pasosMarcados > 0 && pasosMarcados < total;
+}
+
+/** Lo que hace falta para cambiar de ruta, inyectado: así el orden se prueba sin DOM. */
+export interface PasosCambio {
+  /** Descarga el contenido de la ruta de destino. */
+  cargar: () => Promise<unknown>;
+  /** ¿Sigue siendo este el intento en curso? Falso si se cerró o se lanzó otro. */
+  vigente: () => boolean;
+  cerrarSesiones: () => void;
+  abortarIa: () => void;
+  callar: () => void;
+  salirDePantallaCompleta: () => void;
+  /** Asigna la ruta activa y repinta. */
+  cambiar: () => Promise<void>;
+}
+
+export type FinCambio = { fin: "hecho" } | { fin: "abandonado" } | { fin: "fallo"; error: unknown };
+
+/**
+ * El cambio de ruta, en su orden: descargar → cerrar lo que hubiera en curso →
+ * cambiar. Nada se cierra ni se asigna antes de tener el contenido, así que un
+ * fallo de descarga deja la ruta anterior y su tanda intactas. Un intento que
+ * ya no es el vigente termina sin tocar nada y sin informar de su fallo.
+ */
+export async function secuenciaCambio(p: PasosCambio): Promise<FinCambio> {
+  try {
+    await p.cargar();
+  } catch (error) {
+    return p.vigente() ? { fin: "fallo", error } : { fin: "abandonado" };
+  }
+  if (!p.vigente()) return { fin: "abandonado" };
+  try {
+    p.cerrarSesiones();
+    p.abortarIa();
+    p.callar();
+    p.salirDePantallaCompleta();
+    await p.cambiar();
+  } catch (error) {
+    return { fin: "fallo", error };
+  }
+  return { fin: "hecho" };
 }
 
 /** El botón de confirmar nombra el destino: "Cambiar a B2 → C1". */

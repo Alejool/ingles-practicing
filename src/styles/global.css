@@ -220,25 +220,55 @@ td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 @media(max-width:959px){
   .nav > button{width:auto;flex:0 0 auto;padding:7px 11px}
   .nav{-webkit-overflow-scrolling:touch}
-  .brand{padding:16px 16px 12px}
   .main{padding:20px 16px 80px}
 }
 
-/* ---------- selector de ruta ---------- */
-.trackpick{padding:12px 12px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
-.trackpick .tlabel{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:2px}
-.trackpick button{display:flex;flex-direction:column;gap:2px;text-align:left;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--rs);padding:8px 10px;cursor:pointer;color:var(--ink-2)}
-.trackpick button:hover{border-color:var(--line-2);color:var(--ink)}
-.trackpick button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
-.trackpick .tname{font-family:var(--f-display);font-size:17px;letter-spacing:-.01em}
-.trackpick .twho{font-size:11.5px;line-height:1.35;color:var(--ink-3)}
-.trackpick button[aria-pressed="true"] .twho{color:var(--accent-ink);opacity:.85}
+/* ---------- indicador de ruta ----------
+   Un solo botón que dice en qué ruta estás y abre el selector; no cambia nada
+   por sí mismo. En escritorio va bajo la marca; en móvil comparte su línea, a
+   la derecha, y no ocupa franja propia. */
+.brand{display:flex;flex-direction:column;gap:14px}
+.brand-id{min-width:0}
+.ruta-ind{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 10px;align-items:center;width:100%;min-height:44px;text-align:left;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--rs);padding:7px 10px;cursor:pointer;color:var(--ink)}
+.ruta-ind:hover{border-color:var(--line-2);background:var(--surface)}
+.ruta-ind:active{background:var(--accent-soft);border-color:var(--accent)}
+.ruta-ind .tlabel{grid-column:1;font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)}
+.ruta-ind .tname{grid-column:1;font-family:var(--f-display);font-size:17px;letter-spacing:-.01em;white-space:nowrap}
+.ruta-accion{grid-column:2;grid-row:1 / span 2;font-size:12.5px;color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 @media(max-width:959px){
-  .trackpick{flex-direction:row;padding:10px 12px}
-  .trackpick .tlabel{display:none}
-  .trackpick button{flex:1}
-  .trackpick .twho{display:none}
+  .brand{flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px}
+  .brand .bt{font-size:19px}
+  .brand .bs,.ruta-ind .tlabel{display:none}
+  .trackpick{flex:0 0 auto}
+  .ruta-ind{width:auto}
+  .ruta-accion{grid-row:1}
 }
+
+/* ---------- selector de ruta (dentro del diálogo) ---------- */
+.dlg .chip{white-space:normal}
+.dlg-nota{font-size:14px;color:var(--ink-2)}
+.dlg-pie{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed}
+.ruta-lista{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ruta-op{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;min-height:44px;text-align:left;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--rs);padding:12px 13px;cursor:pointer;color:var(--ink);overflow-wrap:anywhere}
+.ruta-op:hover{border-color:var(--line-2)}
+.ruta-op:active{border-color:var(--accent)}
+.ruta-op[aria-current="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.ruta-op[aria-disabled="true"]{cursor:not-allowed;border-style:dashed}
+.ruta-op[aria-disabled="true"]:hover{border-color:var(--line)}
+.ruta-cab{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.ruta-op .tname{font-family:var(--f-display);font-size:20px;letter-spacing:-.01em}
+.ruta-who{font-size:14px;line-height:1.45;color:var(--ink)}
+.ruta-exam,.ruta-prog{font-size:12.5px;line-height:1.4;color:var(--ink-2)}
+.ruta-no{font-size:12.5px;font-weight:600;color:var(--bad)}
+.aviso{font-size:14.5px;line-height:1.55;margin-top:8px}
+.aviso.warn,.aviso.bad{padding:9px 12px;border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:0 var(--rs) var(--rs) 0}
+.aviso.bad{border-left-color:var(--bad);background:var(--bad-soft)}
+.ruta-acepto{display:flex;gap:10px;align-items:flex-start;min-height:44px;margin-top:12px;padding:10px 0;font-size:14.5px;font-weight:500;cursor:pointer}
+.ruta-acepto input{flex:0 0 auto;width:20px;height:20px;margin:1px 0 0;accent-color:var(--accent)}
+.ruta-estado{font-size:14px;color:var(--ink-2);margin-top:10px}
+.ruta-error{font-size:14.5px;font-weight:500;color:var(--bad);margin-top:6px}
+.ruta-estado:empty,.ruta-error:empty{display:none}
 
 /* ---------- diálogo ----------
    La caja va en la capa superior del navegador: no empuja el contenido ni
@@ -248,6 +278,8 @@ td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .dlg{width:min(560px,calc(100vw - 24px));max-width:none;max-height:90dvh;overflow-y:auto;padding:20px 18px;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r);box-shadow:var(--shadow)}
 .dlg::backdrop{background:var(--paper);opacity:.8}
 .dlg-t{font-size:23px;letter-spacing:-.01em;margin-bottom:12px;overflow-wrap:anywhere}
+/* El título recibe el foco al abrir para que se lea, pero no es un control: sin aro. */
+.dlg-t:focus{outline:none}
 /* Navegador sin `showModal`: la misma caja, fija arriba y sin velo. */
 .dlg-enlinea{display:block;position:fixed;inset:12px 0 auto;margin:0 auto;z-index:70}
 
@@ -295,7 +327,6 @@ body:not(.listo) .app{visibility:hidden}
 .boot-s{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
 @keyframes latido{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.94)}}
 @media(prefers-reduced-motion:reduce){.boot-mark{animation:none}}
-body.cargando-ruta .trackpick{opacity:.5;pointer-events:none}
 
 /* ---------- dictado ---------- */
 .dw{padding:1px 3px;border-radius:4px}
@@ -307,10 +338,16 @@ body.cargando-ruta .trackpick{opacity:.5;pointer-events:none}
 body.onboarding{overflow:hidden}
 .onb{position:fixed;inset:0;z-index:60;background:var(--paper);overflow-y:auto;padding:32px 16px 64px}
 .onb-caja{max-width:720px;margin:0 auto}
-.onb-op{cursor:pointer;transition:border-color .12s ease,background .12s ease}
-.onb-op:hover{border-color:var(--line-2)}
-.onb-op[data-on="1"]{border-color:var(--accent);background:var(--accent-soft)}
-.onb-op[data-on="1"] h3{color:var(--accent-ink)}
+.onb-op{display:flex;flex-direction:column;align-items:flex-start;gap:6px;width:100%;min-height:44px;text-align:left;cursor:pointer;transition:border-color .12s ease,background .12s ease}
+.onb-op:where(:not(:disabled)):hover{border-color:var(--line-2)}
+.onb-op:disabled{opacity:.55;cursor:not-allowed}
+.onb-nombre{font-family:var(--f-display);font-size:24px;line-height:1.18}
+.onb-op[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.onb-op[aria-pressed="true"] .onb-nombre{color:var(--accent-ink)}
+/* La elegida se dice con texto, no solo con el color del borde. */
+.onb-marca{visibility:hidden;background:var(--surface);border-color:var(--accent)}
+.onb-op[aria-pressed="true"] .onb-marca{visibility:visible}
+.onb #onbT:focus{outline:none}
 @media(min-width:720px){.onb{padding:56px 24px 80px}}
 
 /* Cuadrícula de los 120 días: pequeña con ratón, de dedo en táctil. */
@@ -336,7 +373,7 @@ body.onboarding{overflow:hidden}
    casillas del plan crecen: es donde más se toca y donde más molesta fallar.
    Solo con `pointer:coarse`, para no engordar la interfaz con ratón. */
 @media (pointer:coarse){
-  .btn,.opt,.seg,.trackpick button,.nav button,.week > button.wh,
+  .btn,.opt,.seg,.nav button,.week > button.wh,
   select,input[type=text],input[type=password],input[type=date],input[type=number]{
     min-height:44px
   }
@@ -382,6 +419,10 @@ body.onboarding{overflow:hidden}
    pantalla es solo la pregunta y sus respuestas. */
 .view.en-sesion > .eyebrow,.view.en-sesion > .h-page,.view.en-sesion > .lede{display:none}
 .view.en-sesion #vocabApp{margin-top:0}
+/* En móvil la tanda esconde el lateral: la ruta se sigue leyendo aquí. En
+   escritorio el indicador sigue a la vista y la línea sobra. */
+.ruta-sesion{display:none;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
+@media(max-width:959px){.view.en-sesion > .ruta-sesion{display:block}}
 
 /* Las cinco cajas del Leitner, en pequeño: son un dato, no el protagonista. */
 .cajitas{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:12px}

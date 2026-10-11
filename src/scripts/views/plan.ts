@@ -21,6 +21,8 @@ import { renderPanel } from "./panel";
 import { setIntent } from "../intent";
 import { go } from "../nav";
 import { tiene, anadirCarta } from "../mine";
+import { declararSesion } from "../sesion";
+import { planAMedias } from "../selector-ruta";
 import type { Day, DayBlock, StepGoto } from "../../data/types";
 
 const NUM: Record<number, string> = { 1: "un", 2: "dos", 3: "tres", 4: "cuatro", 5: "cinco", 6: "seis" };
@@ -428,7 +430,17 @@ function render(): void {
   out.append(el("p", { class: "tiny", style: "margin-bottom:6px" }, "Van en orden. Marca cada uno al terminarlo y el día se cierra solo. Pulsa la cabecera de cualquier paso para abrirlo o cerrarlo."));
 
   const pasos: PasoUI[] = [];
+  // Cada paso se guarda al marcarlo: cambiar de ruta no pierde nada, solo se avisa.
+  function declarar(): void {
+    declararSesion("plan", planAMedias(stepsDone(day.n, day.blocks.length), day.blocks.length) ? {
+      tipo: "informativa", nombre: "Plan · día " + day.n,
+      pierde: "",
+      conserva: "El día queda a medias; los pasos que marcaste se conservan.",
+      cerrar: () => {},
+    } : null);
+  }
   function refrescar(): void {
+    declarar();
     pasos.forEach(p => p.refrescar());
     cabHost.innerHTML = "";
     cabHost.append(cabecera(day, all.length, refrescar));
@@ -447,6 +459,7 @@ function render(): void {
   cabHost.append(cabecera(day, all.length, refrescar));
   retoHost.append(reto(day));
   marcadores();
+  declarar();
 }
 
 /** Los dos rótulos de la cabecera del módulo. */

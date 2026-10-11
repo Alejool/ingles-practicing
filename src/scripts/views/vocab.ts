@@ -29,6 +29,7 @@ import { anadirCarta, tiene } from "../mine";
 import { go } from "../nav";
 import { hablar, hayVoz } from "../voice";
 import { ajustarAlto, pantallaCompleta } from "../pasos";
+import { declararSesion } from "../sesion";
 import { DECK_CATS } from "../../data/types";
 import type { Card, Deck } from "../../data/types";
 
@@ -127,6 +128,12 @@ export function renderVocab(): void {
   // En el móvil el menú ocupa media pantalla: durante la tanda se quita entero
   // y la pregunta se queda con todo el alto. Para salir está el botón «Salir».
   pantallaCompleta(!!sesion && sesion.pos < sesion.turnos.length, "vocab");
+  declararSesion("vocab", sesion && sesion.pos < sesion.turnos.length ? {
+    tipo: "tanda", nombre: "Vocabulario · " + mazo(sesion.deck).name,
+    pierde: "",
+    conserva: "Las tarjetas que ya respondiste quedan calificadas; las que faltan siguen pendientes para la próxima tanda.",
+    cerrar: salir,
+  } : null);
   if (sesion) { pintarSesion(host); return; }
   pintarElegir(host);
 }
@@ -211,6 +218,11 @@ function cajitas(d: Deck): HTMLElement[] {
       el("span", { class: "cajita-d" }, i === 0 ? "pendientes" : BOX_DAYS[i] ? BOX_DAYS[i] + " d" : "nueva")));
 }
 
+function salir(): void {
+  sesion = null;
+  renderVocab();
+}
+
 /* ─────────────── armar la tanda ─────────────── */
 
 function empezar(modo: Modo): void {
@@ -259,7 +271,7 @@ function pintarSesion(host: HTMLElement): void {
   const c = d.cards[turno.i] as Card;
 
   const cab = el("div", { class: "ses-cab" },
-    el("button", { class: "btn ghost small", type: "button", onclick: () => { sesion = null; renderVocab(); } }, "‹ Salir"),
+    el("button", { class: "btn ghost small", type: "button", onclick: salir }, "‹ Salir"),
     el("div", { class: "ses-barra" }, el("i", { style: "width:" + Math.round(s.pos / s.turnos.length * 100) + "%" })),
     el("span", { class: "mono tiny" }, (s.pos + 1) + " / " + s.turnos.length));
 

@@ -2,8 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  ESTADO_INICIAL, avisos, diaActual, etiquetaIndicador, marcaConstruccion, opciones, reducir,
-  resumenProgreso, seVaAPerder, textoCasilla, textoConfirmar,
+  ESTADO_INICIAL, avisos, diaActual, etiquetaIndicador, marcaConstruccion, opciones, planAMedias, reducir,
+  resumenProgreso, secuenciaCambio, seVaAPerder, textoCasilla, textoConfirmar,
 } from "../src/scripts/selector-ruta.ts";
 import type { Accion, EstadoSelector, MetaRuta } from "../src/scripts/selector-ruta.ts";
 import type { SesionActiva } from "../src/scripts/sesion.ts";
@@ -239,11 +239,16 @@ test("avisos: una ruta incompleta añade el aviso de construcción (AC-14)", () 
 });
 
 test("avisos: cada sesión dice qué se pierde y qué se conserva (AC-19, AC-20)", () => {
-  const a = avisos(B1B2, A2B1, [SIMULACRO, TANDA], false).filter(x => x.clase === "sesion");
+  const a = avisos(B1B2, A2B1, [SIMULACRO, TANDA], false).slice(2);
   assert.deepEqual(a.map(x => x.texto), [
     "Tienes en curso: Simulacro 2. Se pierde lo respondido en el simulacro. Tus simulacros anteriores se conservan.",
     "Tienes en curso: Gramática · unidad 3. Lo que ya has respondido queda guardado.",
   ]);
+});
+
+test("avisos: solo la sesión que pierde algo va como alerta; la que se retoma, como información", () => {
+  const a = avisos(B1B2, A2B1, [SIMULACRO, TANDA], false).slice(2);
+  assert.deepEqual(a.map(x => x.clase), ["sesion", "informa"]);
 });
 
 test("avisos: una respuesta de IA en curso se menciona una sola vez (AC-21)", () => {
@@ -296,4 +301,107 @@ test("textoCasilla nombra lo que se pierde, y solo eso (AC-19)", () => {
   assert.equal(textoCasilla([SIMULACRO, TANDA]), "Entiendo que pierdo lo que tengo a medias en Simulacro 2");
   assert.equal(textoCasilla([SIMULACRO, quiz]), "Entiendo que pierdo lo que tengo a medias en Simulacro 2 y Prueba rápida");
   assert.equal(textoCasilla([SIMULACRO, quiz, dictado]), "Entiendo que pierdo lo que tengo a medias en Simulacro 2, Prueba rápida y Dictado");
+});
+
+test("desde el error se puede volver a la lista para elegir otra ruta", () => {
+  assert.deepEqual(tras([...ERROR, { t: "volver" }]), { ...ESTADO_INICIAL("b1b2"), fase: "lista" });
+});
+
+/* ─────────────── día del plan a medias ─────────────── */
+
+test("planAMedias es verdadero solo con algún paso marcado y alguno por marcar (S-8)", () => {
+  assert.equal(planAMedias(0, 5), false);
+  assert.equal(planAMedias(1, 5), true);
+  assert.equal(planAMedias(4, 5), true);
+  assert.equal(planAMedias(5, 5), false);
+  assert.equal(planAMedias(1, 1), false);
+  assert.equal(planAMedias(0, 0), false);
+});
+
+/* ─────────────── la secuencia del cambio ─────────────── */
+
+/** Dependencias falsas que apuntan cada llamada, en orden. */
+function pasosFalsos(o: { cargar?: () => Promise<void>; vigente?: () => boolean; cambiar?: () => Promise<void>; cerrar?: () => void } = {}) {
+  const llamadas: string[] = [];
+  function apuntar<R>(nombre: string, fn: () => R): () => R {
+    return () => { llamadas.push(nombre); return fn(); };
+  }
+  return {
+    llamadas,
+    pasos: {
+      cargar: apuntar("cargar", o.cargar ?? (async () => {})),
+      vigente: o.vigente ?? (() => true),
+      cerrarSesiones: apuntar("cerrarSesiones", o.cerrar ?? (() => {})),
+      abortarIa: apuntar("abortarIa", () => {}),
+      callar: apuntar("callar", () => {}),
+      salirDePantallaCompleta: apuntar("salirDePantallaCompleta", () => {}),
+      cambiar: apuntar("cambiar", o.cambiar ?? (async () => {})),
+    },
+  };
+}
+
+test("secuenciaCambio: descarga primero, cierra lo que hubiera después y cambia al final", async () => {
+  const { llamadas, pasos } = pasosFalsos();
+  assert.deepEqual(await secuenciaCambio(pasos), { fin: "hecho" });
+  assert.deepEqual(llamadas, ["cargar", "cerrarSesiones", "abortarIa", "callar", "salirDePantallaCompleta", "cambiar"]);
+});
+
+test("secuenciaCambio: mientras la descarga no termina, no se ha cerrado ni cambiado nada", async () => {
+  let soltar: () => void = () => {};
+  const { llamadas, pasos } = pasosFalsos({ cargar: () => new Promise<void>(r => { soltar = r; }) });
+  const fin = secuenciaCambio(pasos);
+  await Promise.resolve();
+  assert.deepEqual(llamadas, ["cargar"]);
+  soltar();
+  assert.deepEqual(await fin, { fin: "hecho" });
+});
+
+test("secuenciaCambio: si la descarga falla, no se cierra ninguna sesión ni se asigna la ruta (AC-17)", async () => {
+  const error = new Error("sin red");
+  const { llamadas, pasos } = pasosFalsos({ cargar: async () => { throw error; } });
+  assert.deepEqual(await secuenciaCambio(pasos), { fin: "fallo", error });
+  assert.deepEqual(llamadas, ["cargar"]);
+});
+
+test("secuenciaCambio: un intento abandonado durante la descarga no toca nada al terminar", async () => {
+  const { llamadas, pasos } = pasosFalsos({ vigente: () => false });
+  assert.deepEqual(await secuenciaCambio(pasos), { fin: "abandonado" });
+  assert.deepEqual(llamadas, ["cargar"]);
+});
+
+test("secuenciaCambio: un intento abandonado cuya descarga falla no informa del fallo", async () => {
+  const { pasos } = pasosFalsos({ vigente: () => false, cargar: async () => { throw new Error("sin red"); } });
+  assert.deepEqual(await secuenciaCambio(pasos), { fin: "abandonado" });
+});
+
+test("secuenciaCambio: una excepción al cerrar o al cambiar sale como fallo, no deja la carga colgada", async () => {
+  const alCerrar = new Error("vista rota");
+  const uno = pasosFalsos({ cerrar: () => { throw alCerrar; } });
+  assert.deepEqual(await secuenciaCambio(uno.pasos), { fin: "fallo", error: alCerrar });
+  assert.ok(!uno.llamadas.includes("cambiar"));
+
+  const alCambiar = new Error("no se pudo guardar");
+  const dos = pasosFalsos({ cambiar: async () => { throw alCambiar; } });
+  assert.deepEqual(await secuenciaCambio(dos.pasos), { fin: "fallo", error: alCambiar });
+});
+
+/* ─────────────── ruta empezada por otros módulos ─────────────── */
+
+test("resumenProgreso cuenta como empezada una ruta con gramática, Use of English, simulacros o writing", () => {
+  const empezadas: Array<Parameters<typeof resumenProgreso>[0]> = [
+    { gram: { g1: { 0: true } } },
+    { uoe: { "t:1": { v: "x", ok: true } } },
+    { mock: { best: 50, history: [{ d: "2026-10-01", s: 16, cs: 160 }] } },
+    { writing: { w1: { text: "Dear Sir", chk: {} } } },
+    { quiz: { best: 80, history: [{ at: 1, areas: ["gram"], right: 8, total: 10, secs: 200 }] } },
+    { read: { b0: 1 } },
+  ];
+  for (const p of empezadas) assert.equal(resumenProgreso(p, 120), "día 1 de 120", Object.keys(p)[0]);
+});
+
+test("resumenProgreso no cuenta registros vacíos como progreso", () => {
+  assert.equal(resumenProgreso({
+    gram: { g1: {} }, uoe: {}, mock: { best: null, history: [] }, writing: { w1: { text: "  ", chk: {} } },
+    quiz: { best: null, history: [] }, read: {},
+  }, 120), "sin empezar");
 });

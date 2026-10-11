@@ -19,6 +19,7 @@ import { takeIntent } from "../intent";
 import { isGap } from "../../data/types";
 import { bump } from "../progress";
 import { crearPasos, navPasos, pantallaCompleta } from "../pasos";
+import { declararSesion } from "../sesion";
 import type { ClozeGap } from "../../data/types";
 
 export let uoeSel = "trans";
@@ -53,6 +54,12 @@ export function renderUoe(): void {
   if (!out) return;
   out.innerHTML = "";
   pantallaCompleta(paso !== null && paso >= 0, "uoe");
+  declararSesion("uoe", paso !== null && paso >= 0 ? {
+    tipo: "tanda", nombre: "Use of English · " + (series().find(s => s.id === uoeSel)?.nombre ?? "Open cloze"),
+    pierde: "",
+    conserva: "Los ejercicios que ya respondiste quedan guardados: al volver a la serie siguen contestados.",
+    cerrar: salir,
+  } : null);
   if (paso === null) { elegir(out); return; }
   if (paso < 0) { resumen(out); return; }
   if (uoeSel === "trans") recorridoTrans(out);
@@ -61,6 +68,11 @@ export function renderUoe(): void {
 }
 
 /* ─────────────── elegir ─────────────── */
+
+function salir(): void {
+  paso = null;
+  renderUoe();
+}
 
 const EXPLICA: Record<string, string> = {
   trans: "Reescribe la frase con la palabra clave. Entre dos y cinco palabras y la clave no se toca.",
@@ -145,7 +157,7 @@ function campo(id: string, aceptadas: string[], expl: string, cuerpo: HTMLElemen
 
 function recorridoTrans(out: HTMLElement): void {
   const items = T().trans;
-  const pasos = crearPasos(out, { alSalir: () => { paso = null; renderUoe(); } });
+  const pasos = crearPasos(out, { alSalir: salir });
 
   const pintar = () => {
     pasos.limpiar();
@@ -169,7 +181,7 @@ function recorridoTrans(out: HTMLElement): void {
 
 function recorridoWform(out: HTMLElement): void {
   const items = T().wform;
-  const pasos = crearPasos(out, { alSalir: () => { paso = null; renderUoe(); } });
+  const pasos = crearPasos(out, { alSalir: salir });
 
   const pintar = () => {
     pasos.limpiar();
@@ -205,7 +217,7 @@ function ponerPie(pasos: ReturnType<typeof crearPasos>, i: number, total: number
 function recorridoCloze(out: HTMLElement): void {
   const texto = T().clozes[clozeIdx];
   const huecos = texto.parts.filter(isGap) as ClozeGap[];
-  const pasos = crearPasos(out, { alSalir: () => { paso = null; renderUoe(); } });
+  const pasos = crearPasos(out, { alSalir: salir });
 
   const pintar = () => {
     pasos.limpiar();

@@ -8,8 +8,8 @@
 
 import { S, save, resetState } from "./state";
 import { $, el, toast } from "./dom";
-import { MODULES, go, buildNav, buildTrackPicker, applyTheme, cycleTheme, setModuleRenderer, onTheme } from "./nav";
-import { setTrackListener, setLoadingListener, asegurarRuta, asegurarLecturas, T } from "./track";
+import { MODULES, go, buildNav, applyTheme, cycleTheme, setModuleRenderer, onTheme } from "./nav";
+import { setTrackListener, asegurarRuta, asegurarLecturas, T } from "./track";
 import { setStatsListener, marcarActividad, tickMinuto, currentDay, daysDone, streakLen } from "./progress";
 import { latir } from "./pulse";
 import { refreshAi } from "./ai";
@@ -35,6 +35,7 @@ import { renderRes } from "./views/resources";
 import { renderAjustes, setAfterImport, setSwReg, APP_VERSION } from "./views/settings";
 import { renderAccount } from "./views/account";
 import { haceFalta, montarOnboarding } from "./views/onboarding";
+import { montarIndicador } from "./views/selector";
 
 /** Qué función pinta cada módulo. La usa `go` para refrescar al entrar. */
 const PINTA: Record<string, () => void> = {
@@ -66,21 +67,21 @@ setModuleRenderer(id => {
   PINTA[id]?.();
 });
 setStatsListener(renderPanel);
-setAfterImport(renderAll);
-setMergeListener(renderAll);
+/* Importar una copia, fusionar con el servidor o reiniciar pueden cambiar la
+   ruta activa sin pasar por `setTrack`: el indicador se repinta con todo lo demás. */
+function repintarTodo(): void {
+  montarIndicador();
+  renderAll();
+}
+setAfterImport(repintarTodo);
+setMergeListener(repintarTodo);
 
 /* Cambiar de ruta repinta la app entera: el contenido sale todo de T(). */
 setTrackListener(() => {
-  buildTrackPicker();
+  montarIndicador();
   renderAll();
   toast("Ruta: " + T().name);
   setTimeout(() => { asegurarLecturas().catch(() => { /* se pedirán al abrir Reading */ }); }, 1200);
-});
-
-/* Mientras baja el contenido de la otra ruta, el selector se pone en espera. */
-setLoadingListener(cargando => {
-  document.body.classList.toggle("cargando-ruta", cargando);
-  if (cargando) toast("Cargando la ruta…");
 });
 
 /* El botón del menú es el atajo; el control completo está en Ajustes. */
@@ -104,12 +105,12 @@ $("#resetBtn")?.addEventListener("click", () => {
   resetState();
   applyTheme();
   refreshAi();
-  renderAll();
+  repintarTodo();
   toast("Progreso reiniciado");
 });
 
 buildNav();
-buildTrackPicker();
+montarIndicador();
 applyTheme();
 
 /* Enlace mágico: el token llega en el fragmento y no debe quedarse en la barra. */
@@ -135,7 +136,7 @@ async function arrancar(): Promise<void> {
 
   /* Primera visita: elegir ruta, diez preguntas y a estudiar. */
   if (haceFalta()) {
-    montarOnboarding(() => { buildTrackPicker(); renderAll(); go("plan"); });
+    montarOnboarding(() => { montarIndicador(); renderAll(); go("plan"); });
   }
 
   renderTutorModes();
@@ -167,7 +168,7 @@ async function arrancar(): Promise<void> {
     renderAccount();
     if (s.user) {
       await pullAndMerge();
-      renderAll();
+      repintarTodo();
       if (authResult === "ok") { go("cuenta"); toast("Sesión iniciada como " + s.user.email); }
     }
   });

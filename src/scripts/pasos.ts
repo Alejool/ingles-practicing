@@ -24,6 +24,8 @@
  */
 
 import { el } from "./dom";
+import { S } from "./state";
+import { metaDe } from "./track";
 
 export interface Pasos {
   /** La caja entera, ya colgada del contenedor. */
@@ -123,8 +125,17 @@ export function navPasos(opts: {
   return fila;
 }
 
-/** Marca el cuerpo de la app como «en pantalla completa» mientras dure la tanda. */
+/**
+ * Marca el cuerpo de la app como «en pantalla completa» mientras dure la tanda.
+ *
+ * En móvil eso esconde el lateral y con él el indicador de ruta, así que la
+ * vista en sesión lleva una línea que dice en qué ruta estás.
+ */
 export function pantallaCompleta(activa: boolean, vista?: string): void {
   document.body.classList.toggle("sesion-activa", activa);
-  if (vista) document.getElementById("v-" + vista)?.classList.toggle("en-sesion", activa);
+  const v = vista ? document.getElementById("v-" + vista) : null;
+  if (!v) return;
+  v.classList.toggle("en-sesion", activa);
+  v.querySelector(":scope > .ruta-sesion")?.remove();
+  if (activa) v.prepend(el("p", { class: "ruta-sesion" }, "Ruta: " + metaDe(S.track).name));
 }

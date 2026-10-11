@@ -15,6 +15,7 @@ import { el, toast } from "../dom";
 import { T, days } from "../track";
 import { bump, tally, currentDay } from "../progress";
 import { renderPanel } from "./panel";
+import { declararSesion } from "../sesion";
 import { hablarGuion, callar, hayVoz, hablando } from "../voice";
 import type { ListeningTrack } from "../../data/types";
 
@@ -72,6 +73,13 @@ function pintar(): void {
   const t = T();
   const a = t.listening[abierto!];
   host.append(selector(), ficha(a));
+  const aMedias = pase === 2 && hechas(a) > 0 && hechas(a) < a.qs.length;
+  declararSesion("escucha", aMedias ? {
+    tipo: "tanda", nombre: "Escucha · " + a.title,
+    pierde: "",
+    conserva: "Las preguntas que ya respondiste quedan guardadas: al volver al audio siguen contestadas.",
+    cerrar: () => { pararEscucha(); abierto = null; pase = 1; },
+  } : null);
   if (pase >= 2) host.append(preguntas(a));
   if (pase === 3) host.append(transcript(a));
 }

@@ -12,6 +12,7 @@ import { T, asegurarLecturas, hayLecturas } from "../track";
 import { bump, tally } from "../progress";
 import { anadir } from "../mine";
 import { renderPanel } from "./panel";
+import { declararSesion } from "../sesion";
 import type { QuizRun } from "../../data/types";
 
 type Area = "gram" | "vocab" | "uoe" | "read";
@@ -152,12 +153,25 @@ function pararReloj(): void {
   if (reloj) { clearInterval(reloj); reloj = null; }
 }
 
+/** Abandona la prueba en curso y vuelve a la portada. */
+function dejarlo(): void {
+  pararReloj();
+  preguntas = [];
+  renderQuiz();
+}
+
 /* ─────────────── pantallas ─────────────── */
 
 export function renderQuiz(): void {
   const out = $("#quizOut");
   if (!out) return;
   out.innerHTML = "";
+  declararSesion("quiz", preguntas.length && i < preguntas.length ? {
+    tipo: "tanda", nombre: "Prueba rápida",
+    pierde: "Se pierde la prueba en curso: no llega a tu historial.",
+    conserva: "Las pruebas que ya terminaste se conservan.",
+    cerrar: dejarlo,
+  } : null);
   if (!preguntas.length) out.append(portada());
   else if (i < preguntas.length) out.append(pantallaPregunta());
   else out.append(resultado());
@@ -249,7 +263,7 @@ function pantallaPregunta(): HTMLElement {
       el("span", { class: "timer", id: "quizTimer" }, fmt(segundos)),
       el("button", {
         class: "btn ghost small", type: "button",
-        onclick: () => { pararReloj(); preguntas = []; renderQuiz(); },
+        onclick: dejarlo,
       }, "Dejarlo"))));
 
   box.append(el("span", { class: "bar", style: "margin-top:12px;display:block" },

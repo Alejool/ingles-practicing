@@ -236,7 +236,18 @@ export async function streamAi(kind: AiKind, payload: any, opts: StreamOptions =
 
 /* ---------- pintar la respuesta ---------- */
 
-let aiCtl: AbortController | null = null;
+/** Un control por cada corrección que `ask` tiene en marcha: cada «Parar» corta la suya. */
+const enVuelo = new Set<AbortController>();
+
+/** ¿Hay una corrección escribiéndose? El selector de ruta lo avisa antes de cambiar. */
+export function iaEnCurso(): boolean {
+  return enVuelo.size > 0;
+}
+
+/** Corta todas las correcciones en marcha, como si se pulsara «Parar» en cada una. */
+export function abortarIa(): void {
+  enVuelo.forEach(c => c.abort());
+}
 
 /* ---------- cola offline ---------- */
 
@@ -268,16 +279,17 @@ function rotuloDe(kind: AiKind): string {
 /** Pide una corrección y la va escribiendo en `out`. */
 export async function ask(kind: AiKind, payload: any, out: HTMLElement, btn?: HTMLButtonElement | null): Promise<void> {
   out.innerHTML = "";
-  aiCtl = new AbortController();
+  const ctl = new AbortController();
+  enVuelo.add(ctl);
   const old = btn ? btn.textContent : "";
   if (btn) { btn.disabled = true; btn.textContent = "Corrigiendo…"; }
 
   const pane = el("div", { class: "fb" }, el("span", { class: "dots" }, "Pensando"));
-  const stop = el("button", { class: "btn ghost small", style: "margin-top:10px", type: "button", onclick: () => aiCtl?.abort() }, "Parar");
+  const stop = el("button", { class: "btn ghost small", style: "margin-top:10px", type: "button", onclick: () => ctl.abort() }, "Parar");
   out.append(pane, stop);
 
   try {
-    await streamAi(kind, payload, { signal: aiCtl.signal, onText: t => { pane.textContent = t; } });
+    await streamAi(kind, payload, { signal: ctl.signal, onText: t => { pane.textContent = t; } });
     touchDay();
     save();
   } catch (e: any) {
@@ -311,6 +323,7 @@ export async function ask(kind: AiKind, payload: any, out: HTMLElement, btn?: HT
       }
     }
   } finally {
+    enVuelo.delete(ctl);
     if (btn) { btn.disabled = false; btn.textContent = old; }
     stop.remove();
     refreshAi();

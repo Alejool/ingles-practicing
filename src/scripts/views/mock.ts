@@ -17,6 +17,7 @@ import { $, el, esc, norm, pct, fmt } from "../dom";
 import { T } from "../track";
 import { renderPanel } from "./panel";
 import { crearPasos, navPasos, pantallaCompleta } from "../pasos";
+import { declararSesion } from "../sesion";
 
 export let mockAns: Record<number, any> = {};
 let mockRunning = false;
@@ -93,6 +94,12 @@ export function renderMockBlank(): void {
   if (!out) return;
   out.innerHTML = "";
   pantallaCompleta(mockRunning, "mock");
+  declararSesion("mock", mockRunning ? {
+    tipo: "simulacro", nombre: "Simulacro " + (mockIdx() + 1),
+    pierde: "Se pierde todo lo respondido: un simulacro no se puede retomar.",
+    conserva: "Los simulacros que ya entregaste siguen en el historial.",
+    cerrar: abandonar,
+  } : null);
 
   if (mockRunning) { examen(out); return; }
   if (corregido) { resultado(out); return; }
@@ -140,9 +147,7 @@ function examen(out: HTMLElement): void {
   const pasos = crearPasos(out, {
     alSalir: () => {
       if (!confirm("¿Salir del simulacro? Se pierde lo respondido.")) return;
-      pararReloj();
-      mockRunning = false;
-      renderMockBlank();
+      abandonar();
     },
     salir: "Abandonar",
     extraCab: reloj,
@@ -286,6 +291,13 @@ export function tickMock(): void {
 function pararReloj(): void {
   if (mockT) clearInterval(mockT);
   mockT = null;
+}
+
+/** Deja el simulacro sin entregar y vuelve a la portada. Quien pregunta antes es quien llama. */
+function abandonar(): void {
+  pararReloj();
+  mockRunning = false;
+  renderMockBlank();
 }
 
 /* ─────────────── entregar y corregir ─────────────── */

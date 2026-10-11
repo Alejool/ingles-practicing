@@ -94,21 +94,14 @@ export function hayLecturas(): boolean {
 let onTrackChange: () => void = () => {};
 export function setTrackListener(fn: () => void): void { onTrackChange = fn; }
 
-/** Avisos de «estoy cargando la otra ruta», para que la interfaz no parezca colgada. */
-let onLoading: (cargando: boolean) => void = () => {};
-export function setLoadingListener(fn: (cargando: boolean) => void): void { onLoading = fn; }
-
 /** Cambiar de ruta espera a tener su contenido: nunca se pinta a medias. */
 export async function setTrack(id: TrackId): Promise<void> {
   if (S.track === id) return;
-  if (!trackCargada(id)) onLoading(true);
   try {
     await cargarTrack(id);
   } catch {
-    onLoading(false);
     throw new Error("No se pudo cargar la ruta " + metaDe(id).name + ". Comprueba la conexión.");
   }
-  onLoading(false);
   S.track = id;
   save();
   onTrackChange();

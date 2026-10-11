@@ -17,6 +17,7 @@ import { T } from "../track";
 import { bump } from "../progress";
 import { takeIntent } from "../intent";
 import { crearPasos, navPasos, pantallaCompleta } from "../pasos";
+import { declararSesion } from "../sesion";
 import type { GrammarUnit } from "../../data/types";
 
 export let gramSel = "g1";
@@ -43,9 +44,20 @@ export function renderGram(): void {
   if (!out) return;
   out.innerHTML = "";
   pantallaCompleta(paso !== null && paso >= 0, "gram");
+  declararSesion("gram", paso !== null && paso >= 0 ? {
+    tipo: "tanda", nombre: "Gramática · " + unidad().t,
+    pierde: "",
+    conserva: "Los ejercicios que ya respondiste quedan guardados: al volver a la unidad siguen contestados.",
+    cerrar: salir,
+  } : null);
   if (paso === null) { elegir(out); return; }
   if (paso < 0) { resumen(out); return; }
   recorrido(out);
+}
+
+function salir(): void {
+  paso = null;
+  renderGram();
 }
 
 /* ─────────────── elegir unidad ─────────────── */
@@ -78,7 +90,7 @@ function recorrido(out: HTMLElement): void {
   const u = unidad();
   const total = u.dr.length;
   const rec = P().gram[u.id] || (P().gram[u.id] = {});
-  const pasos = crearPasos(out, { alSalir: () => { paso = null; renderGram(); } });
+  const pasos = crearPasos(out, { alSalir: salir });
 
   const pintar = () => {
     pasos.limpiar();

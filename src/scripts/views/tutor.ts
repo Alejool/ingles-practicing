@@ -3,6 +3,7 @@ import { touchDay } from "../state";
 import { streamAi, aiCopy, needsAccount, refreshAi } from "../ai";
 import type { TutorMode } from "../../../shared/prompts";
 import { go } from "../nav";
+import { declararSesion } from "../sesion";
 
 const TUTOR_MODES: Array<[TutorMode, string, string]> = [
   ["general", "Conversación libre", "Chat abierto con corrección después de cada mensaje."],
@@ -44,6 +45,7 @@ $("#chatSend")?.addEventListener("click", async () => {
 
   turns.push({ role: "user", content: v });
   tutorCtl = new AbortController();
+  declararSesion("tutor", { tipo: "ia", nombre: "Tutor", pierde: "", conserva: "", cerrar: () => tutorCtl?.abort() });
   const send = $<HTMLButtonElement>("#chatSend");
   send.disabled = true;
 
@@ -66,6 +68,7 @@ $("#chatSend")?.addEventListener("click", async () => {
       }
     }
   } finally {
+    declararSesion("tutor", null);
     send.disabled = false;
     refreshAi();
   }

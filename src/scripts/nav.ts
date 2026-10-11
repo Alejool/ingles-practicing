@@ -1,7 +1,6 @@
 /** Módulos, navegación por hash y tema claro/oscuro. */
 
 import { S } from "./state";
-import { TRACK_META, setTrack } from "./track";
 import { $, $$, el } from "./dom";
 import { anotarVisita } from "./pulse";
 import { callar } from "./voice";
@@ -37,25 +36,6 @@ export function buildNav(): void {
   MODULES.forEach(([id, n, label]) => {
     nav.append(el("button", { type: "button", "data-go": id, onclick: () => go(id) },
       el("span", { class: "n" }, n), el("span", {}, label)));
-  });
-}
-
-/** Selector de ruta: cambiarlo cambia todo el contenido de la app. */
-export function buildTrackPicker(): void {
-  const host = $("#trackPick");
-  if (!host) return;
-  host.innerHTML = "";
-  host.append(el("span", { class: "tlabel" }, "Tu ruta"));
-  TRACK_META.forEach(t => {
-    host.append(el("button", {
-      type: "button",
-      "aria-pressed": String(t.id === S.track),
-      title: t.who + " · " + t.exam,
-      // Cambiar de ruta puede tener que descargar su contenido: por eso es asíncrono.
-      onclick: () => { setTrack(t.id).catch(e => alert(e.message)); },
-    },
-      el("span", { class: "tname" }, t.name),
-      el("span", { class: "twho" }, t.who)));
   });
 }
 

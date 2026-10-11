@@ -14,6 +14,7 @@ import { ask, aiNote } from "../ai";
 import { takeIntent } from "../intent";
 import { marcarActividad, tally } from "../progress";
 import { dictar, hayDictado, medir } from "../speech";
+import { declararSesion } from "../sesion";
 import type { Dictado } from "../speech";
 
 export let spSel = "sp1";
@@ -127,6 +128,12 @@ function grabadora(s: { id: string; name: string; lvl: string; time: number }): 
     pararCrono();
     spLeft = s.time;
     arrancado = Date.now();
+    declararSesion("speak", {
+      tipo: "tanda", nombre: "Speaking · " + s.name,
+      pierde: "Se corta la grabación y se pierde lo transcrito, que no se guarda.",
+      conserva: "",
+      cerrar: pararTodo,
+    });
     timerEl.textContent = fmt(spLeft);
     timerEl.classList.remove("hot");
     spTimer = window.setInterval(() => {
@@ -225,6 +232,7 @@ function consejo(m: ReturnType<typeof medir>): string {
 
 function pararCrono(): void {
   if (spTimer) { clearInterval(spTimer); spTimer = null; }
+  declararSesion("speak", null);
 }
 
 /** Al cambiar de parte o de ruta hay que soltar el micrófono. */

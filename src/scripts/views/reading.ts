@@ -19,6 +19,7 @@ import { hablar, callar, hayVoz, hablando } from "../voice";
 import { compartidas, refrescar, publicar, contarLectura } from "../library";
 import { montarEscucha, pararEscucha, abrirAudio } from "./listening";
 import { crearPasos, navPasos, pantallaCompleta } from "../pasos";
+import { declararSesion } from "../sesion";
 import type { GenText, ReadingText } from "../../data/types";
 import { htmlSeguro, lecturaSegura } from "../../../shared/sanitize";
 
@@ -108,6 +109,14 @@ export function renderInput(): void {
 
   out.innerHTML = "";
   pantallaCompleta(pregunta !== null, "input");
+  const leyendo = pregunta !== null && abierto ? porClave(abierto) : undefined;
+  declararSesion("lectura", leyendo ? {
+    tipo: "tanda", nombre: "Lectura · " + leyendo.text.title,
+    pierde: "",
+    conserva: "Las preguntas que ya respondiste quedan guardadas: al volver al texto puedes seguir donde lo dejaste.",
+    cerrar: salirDePreguntas,
+  } : null);
+  if (sub !== "escucha") declararSesion("escucha", null);
   // Respondiendo: la pantalla es del texto y su pregunta, sin submenús encima.
   if (pregunta !== null && abierto && porClave(abierto)) { examen(out, porClave(abierto)!); return; }
   out.append(menu());
@@ -452,9 +461,14 @@ function lector(e: Entrada): HTMLElement {
  * su propio scroll, así que se puede releer el párrafo tercero mientras se
  * contesta la pregunta cuatro, que es exactamente lo que uno hace en el examen.
  */
+function salirDePreguntas(): void {
+  pregunta = null;
+  renderInput();
+}
+
 function examen(out: HTMLElement, e: Entrada): void {
   const qs = e.text.qs;
-  const pasos = crearPasos(out, { alSalir: () => { pregunta = null; renderInput(); } });
+  const pasos = crearPasos(out, { alSalir: salirDePreguntas });
 
   const pintar = () => {
     pasos.limpiar();

@@ -13,11 +13,13 @@
 
 import { S, save, touchDay, P } from "../state";
 import { $, el, esc, toast } from "../dom";
-import { T, setTrack } from "../track";
+import { T } from "../track";
 import { levelLabelData, setOpenDay } from "../progress";
 import { renderPanel } from "./panel";
 import { go } from "../nav";
 import { crearPasos, navPasos, pantallaCompleta } from "../pasos";
+import { declararSesion } from "../sesion";
+import { pedirCambioDeRuta } from "./selector";
 
 /** null = portada; 0..n-1 = pregunta; -1 = resultado. */
 let paso: number | null = null;
@@ -28,11 +30,24 @@ export function renderDiag(): void {
   out.innerHTML = "";
   // Terminado y sin estar respondiendo: se enseña el resultado directamente.
   if (paso === null && P().diag.done) paso = -1;
+  // Tras cambiar de ruta el resultado en pantalla era de la otra: aquí puede no haber ninguno.
+  if (paso === -1 && !P().diag.done) paso = null;
   pantallaCompleta(paso !== null && paso >= 0, "diag");
+  declararSesion("diag", paso !== null && paso >= 0 ? {
+    tipo: "tanda", nombre: "Diagnóstico",
+    pierde: "",
+    conserva: "Las respuestas que ya marcaste quedan guardadas: al volver puedes seguir donde lo dejaste.",
+    cerrar: salir,
+  } : null);
 
   if (paso === null) { portada(out); return; }
   if (paso < 0) { resultado(out); return; }
   preguntas(out);
+}
+
+function salir(): void {
+  paso = null;
+  renderDiag();
 }
 
 /* ─────────────── portada ─────────────── */
@@ -80,7 +95,7 @@ function primeraSinResponder(): number {
 function preguntas(out: HTMLElement): void {
   const items = T().diag;
   const total = items.length;
-  const pasos = crearPasos(out, { alSalir: () => { paso = null; renderDiag(); } });
+  const pasos = crearPasos(out, { alSalir: salir });
 
   const pintar = () => {
     pasos.limpiar();
@@ -228,7 +243,7 @@ function otraRuta(pct: number): HTMLElement | null {
       el("span", {}, "Con este resultado la ruta A2 → B1 te va a aburrir. "),
       el("button", {
         class: "btn small", style: "margin-left:8px", type: "button",
-        onclick: () => { setTrack("b1b2").then(() => { paso = null; go("diag"); }).catch(e => toast(e.message)); },
+        onclick: () => pedirCambioDeRuta("b1b2"),
       }, "Cambiar a B1 → B2"));
   }
   if (!esA2 && pct < 40) {
@@ -237,7 +252,7 @@ function otraRuta(pct: number): HTMLElement | null {
       el("span", {}, "Con menos del 40% en B1 → B2 conviene afianzar la base antes. "),
       el("button", {
         class: "btn small", style: "margin-left:8px", type: "button",
-        onclick: () => { setTrack("a2b1").then(() => { paso = null; go("diag"); }).catch(e => toast(e.message)); },
+        onclick: () => pedirCambioDeRuta("a2b1"),
       }, "Cambiar a A2 → B1"));
   }
   return null;
