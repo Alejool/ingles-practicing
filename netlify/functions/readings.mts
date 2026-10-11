@@ -17,6 +17,8 @@
 import { preflight, json, fail, ApiError, readJson, num } from "./_http.mts";
 import { q } from "./_db.mts";
 import { currentUser } from "./_auth.mts";
+import { htmlSeguro } from "../../shared/sanitize.ts";
+import type { Lectura } from "../../shared/sanitize.ts";
 
 interface Fila {
   id: string;
@@ -36,25 +38,53 @@ function limpiar(s: unknown, max: number): string {
   return String(s ?? "").slice(0, max).trim();
 }
 
-/** Comprueba que el texto tiene la forma de una lectura antes de guardarlo. */
-function validar(data: any): { title: string; words: number } {
+/**
+ * El id lo propone quien publica y acaba en el panel de administración y en
+ * las URL del contador: solo se acepta con el alfabeto de los que genera la app.
+ */
+export function idPublicable(id: unknown): string {
+  if (id === undefined || id === null || id === "") {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+  if (typeof id !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(id)) {
+    throw new ApiError(422, "bad_payload", "El identificador del texto no es válido.");
+  }
+  return id;
+}
+
+/**
+ * Comprueba que el texto tiene la forma de una lectura antes de guardarlo.
+ *
+ * Lo que se guarda no es lo que llegó sino `data`, rehecho solo con los campos
+ * conocidos y con la explicación de cada pregunta ya limpia: es el único campo
+ * que el cliente pinta como HTML.
+ */
+export function validar(data: any): { title: string; words: number; data: Lectura } {
   if (!data || typeof data !== "object") throw new ApiError(422, "bad_payload", "Falta el texto.");
-  const body = Array.isArray(data.body) ? data.body.filter((p: unknown) => typeof p === "string" && p.trim()) : [];
-  const qs = Array.isArray(data.qs) ? data.qs : [];
+  const body: string[] = Array.isArray(data.body) ? data.body.filter((p: unknown) => typeof p === "string" && p.trim()) : [];
+  const qs: any[] = Array.isArray(data.qs) ? data.qs : [];
   if (body.length < 2) throw new ApiError(422, "bad_payload", "El texto tiene que traer al menos dos párrafos.");
   if (qs.length < 3) throw new ApiError(422, "bad_payload", "El texto tiene que traer al menos tres preguntas.");
   for (const x of qs) {
-    if (!x || typeof x.q !== "string" || !Array.isArray(x.o) || x.o.length !== 4) {
+    if (!x || typeof x.q !== "string" || !Array.isArray(x.o) || x.o.length !== 4
+      || x.o.some((o: unknown) => typeof o !== "string")) {
       throw new ApiError(422, "bad_payload", "Alguna pregunta no tiene cuatro opciones.");
     }
-    if (typeof x.a !== "number" || x.a < 0 || x.a > 3) {
+    if (!Number.isInteger(x.a) || x.a < 0 || x.a > 3) {
       throw new ApiError(422, "bad_payload", "Alguna pregunta no marca cuál es la correcta.");
+    }
+    if (x.e !== undefined && x.e !== null && typeof x.e !== "string") {
+      throw new ApiError(422, "bad_payload", "Alguna explicación no es texto.");
     }
   }
   const title = limpiar(data.title, 140) || "Texto generado";
   const words = body.join(" ").split(/\s+/).length;
   if (words > 1500) throw new ApiError(422, "payload_too_large", "El texto es demasiado largo.");
-  return { title, words };
+  return {
+    title,
+    words,
+    data: { title, body, qs: qs.map(x => ({ q: x.q, o: x.o, a: x.a, e: htmlSeguro(x.e) })) },
+  };
 }
 
 export default async (req: Request): Promise<Response> => {
@@ -100,8 +130,8 @@ export default async (req: Request): Promise<Response> => {
     }
 
     const body = await readJson(req, 128 * 1024);
-    const { title, words } = validar(body?.data);
-    const id = limpiar(body?.id, 64) || (Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+    const { title, words, data } = validar(body?.data);
+    const id = idPublicable(body?.id);
 
     await q(
       `insert into shared_readings (id, track, level, topic, title, words, data, author_id)
@@ -114,7 +144,7 @@ export default async (req: Request): Promise<Response> => {
         limpiar(body?.topic, 120),
         title,
         words,
-        JSON.stringify(body.data),
+        JSON.stringify(data),
         user.id,
       ]
     );

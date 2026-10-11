@@ -20,6 +20,7 @@ import { compartidas, refrescar, publicar, contarLectura } from "../library";
 import { montarEscucha, pararEscucha, abrirAudio } from "./listening";
 import { crearPasos, navPasos, pantallaCompleta } from "../pasos";
 import type { GenText, ReadingText } from "../../data/types";
+import { htmlSeguro, lecturaSegura } from "../../../shared/sanitize";
 
 type Sub = "hoy" | "escucha" | "biblioteca" | "generar" | "dictado" | "estrategia";
 
@@ -44,8 +45,9 @@ function catalogo(): Entrada[] {
   const banco = T().readings.map((t, k) => ({
     key: "b" + k, text: t, etiqueta: "Texto " + (k + 1), generado: false,
   }));
+  // Lo generado sale de un modelo y vuelve del almacenamiento: se limpia al leerlo.
   const mios = generados().map(g => ({
-    key: "g:" + g.id, text: g.text, etiqueta: g.topic || "Generado", generado: true,
+    key: "g:" + g.id, text: lecturaSegura(g.text), etiqueta: g.topic || "Generado", generado: true,
   }));
   // Los de la biblioteca común, sin repetir los que ya tienes tú generados.
   const propios = new Set(generados().map(g => g.id));
@@ -364,7 +366,7 @@ function parsear(bruto: string, nivel: string, tema: string): GenText {
       q: String(q.q),
       o: q.o.map((x: any) => String(x)),
       a: Math.min(3, Math.max(0, Number(q.a) || 0)),
-      e: String(q.e || "Sin explicación."),
+      e: htmlSeguro(String(q.e || "Sin explicación.")),
     }));
   if (body.length < 2 || limpias.length < 3) throw new Error("El texto llegó incompleto. Reintenta.");
 
@@ -485,7 +487,7 @@ function examen(out: HTMLElement, e: Entrada): void {
       el("div", { class: "qtext" }, q.q),
       caja,
       rec ? el("div", { class: "explain", style: "margin-top:10px;text-align:left" },
-        el("span", { class: "tag" }, rec.ok ? "Correcto · por qué" : "Por qué"), el("span", { html: q.e })) : null);
+        el("span", { class: "tag" }, rec.ok ? "Correcto · por qué" : "Por qué"), el("span", { html: htmlSeguro(q.e) })) : null);
 
     pasos.cuerpo.classList.add("lector");
     pasos.cuerpo.append(texto, abajo);

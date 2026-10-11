@@ -12,6 +12,7 @@
 
 import * as api from "./api";
 import { S } from "./state";
+import { lecturaSegura } from "../../shared/sanitize";
 import type { GenText, ReadingText, TrackId } from "../data/types";
 
 const CLAVE = "ruta-b1b2-biblioteca";
@@ -68,9 +69,19 @@ function guardarCache(c: Cache): void {
   try { localStorage.setItem(CLAVE, JSON.stringify(c)); } catch { /* sin sitio: se seguirá pidiendo al servidor */ }
 }
 
-/** Lo que hay guardado de la ruta activa, sin tocar la red. */
+/** La explicación de cada pregunta se pinta como HTML: lo de fuera entra ya limpio. */
+function limpia(t: Compartida): Compartida {
+  return { ...t, data: lecturaSegura(t.data) };
+}
+
+/**
+ * Lo que hay guardado de la ruta activa, sin tocar la red.
+ *
+ * Se limpia aquí, al leer, y no en el almacenamiento: lo que alguien tenga
+ * guardado de antes sale neutralizado sin reescribir ni borrar nada.
+ */
 export function compartidas(track: TrackId = S.track): Compartida[] {
-  return leerCache().textos.filter(t => t.track === track);
+  return leerCache().textos.filter(t => t.track === track).map(limpia);
 }
 
 let pidiendo = false;
@@ -87,7 +98,7 @@ export async function refrescar(track: TrackId = S.track): Promise<number> {
     const desde = c.vistoEn[track];
     const url = "/api/readings?track=" + encodeURIComponent(track) + (desde ? "&after=" + encodeURIComponent(desde) : "");
     const res = await api.get(url);
-    const nuevos: Compartida[] = (Array.isArray(res?.textos) ? res.textos : []).filter(sana);
+    const nuevos: Compartida[] = (Array.isArray(res?.textos) ? res.textos : []).filter(sana).map(limpia);
 
     const ids = new Set(c.textos.map(t => t.id));
     let n = 0;
