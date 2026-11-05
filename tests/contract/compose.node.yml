@@ -1,0 +1,68 @@
+# Stack de referencia de la batería de contrato: la API Node actual (imagen de la raíz)
+# con base, buzón y DeepSeek simulado. Base en tmpfs: cada `up` empieza vacía.
+#
+#   docker compose -p ruta-contract-node -f tests/contract/compose.node.yml up -d --build --wait
+#   npm run test:contract
+#   docker compose -p ruta-contract-node -f tests/contract/compose.node.yml down
+name: ruta-contract-node
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ruta
+      POSTGRES_PASSWORD: ruta
+      POSTGRES_DB: ruta
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    tmpfs:
+      - /var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ruta -d ruta"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      - "127.0.0.1:8026:8025"
+
+  fake-deepseek:
+    image: node:22-alpine
+    working_dir: /fake
+    command: ["node", "--experimental-strip-types", "--no-warnings", "fake-deepseek.mts"]
+    volumes:
+      - ./fake-deepseek.mts:/fake/fake-deepseek.mts:ro
+    ports:
+      - "127.0.0.1:8790:8790"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8790/healthz || exit 1"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  app:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    env_file:
+      - path: ./contract.env
+        required: true
+    environment:
+      DATABASE_URL: postgresql://ruta:ruta@db:5432/ruta
+      DB_DRIVER: pg
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+      fake-deepseek:
+        condition: service_healthy

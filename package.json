@@ -18,7 +18,10 @@
     "start:local": "node -e \"process.env.DB_DRIVER='pglite';import('./server/index.mts')\"",
     "test": "node --experimental-strip-types --no-warnings --test \"tests/*.test.mts\"",
     "test:plan": "node --experimental-strip-types --no-warnings scripts/validar-plan.mts",
-    "plan:export": "node --experimental-strip-types --no-warnings scripts/exportar-plan.mts"
+    "plan:export": "node --experimental-strip-types --no-warnings scripts/exportar-plan.mts",
+    "test:contract": "node --experimental-strip-types --no-warnings --test \"tests/contract/*.test.mts\"",
+    "contract:up": "docker compose -p ruta-contract-node -f tests/contract/compose.node.yml up -d --build --wait",
+    "contract:down": "docker compose -p ruta-contract-node -f tests/contract/compose.node.yml down"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
