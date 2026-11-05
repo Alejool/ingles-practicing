@@ -102,3 +102,42 @@ issues:
 3. `docker compose -f docker/compose.yml run --rm api php artisan test` → todo verde
 4. `docker compose -f docker/compose.yml --profile local up -d --build --wait`; `curl -i http://localhost:8081/healthz` → 200 `{"ok":true}`; `curl -I http://localhost:8081/` → front
 5. Marcar 2.1, 2.2, 2.4–2.9 `[x]` y seguir con 2.10.
+
+## Fase 2 — correcciones de revisión — 2026-11-05 (sesión devops)
+
+Hallazgos de code-review/testing sobre L3 (`.agentflow/TASKS.md`), devueltos al autor. Empezó con Docker caído (runner PHP mínimo + `php -l`); a mitad de sesión Docker volvió y todo se verificó en el contenedor.
+
+| # | Hallazgo | Arreglo | Verificación |
+|---|---|---|---|
+| 1 | `APP_KEY` con valor por defecto público (`docker/compose.yml`) | `APP_KEY: "${APP_KEY:?…}"` sin defecto: compose no arranca sin ella. Local y contrato: `--env-file docker/local.env` (clave pública a propósito, solo local; dicho en el archivo). Producción exporta la suya (`php artisan key:generate --show`). Elegido frente a un override o un perfil porque `${…:?}` se evalúa en el archivo base y un perfil no puede dar valores por defecto; así un olvido en producción falla en vez de colar la clave pública. Coste: cada comando `docker compose` de este stack lleva `--env-file docker/local.env` (cabecera de `compose.yml` actualizada). | `docker compose -f docker/compose.yml config` sin env-file → "required variable APP_KEY is missing a value"; con `--env-file` → ok. |
+| 2 | Renderer catch-all solo `api/*` (`bootstrap/app.php`) | `is('api', 'api/*', 'healthz')`; las `HttpException` pasan de largo (si no, un 404 se volvía 500); en `/healthz` el 500 sale sin CORS (`ApiJson::bare`). | PHPUnit (`RoutingTest`). |
+| 3 | `/api` sin barra sirve el SPA (nginx) | **Es la paridad con Node**: `server/index.mts` solo manda a la API lo que `startsWith("/api/")`; `/api` va a `serveStatic` → `index.html`. Se mantiene, pero nginx respondía **301 → `/api/`** (redirección automática de las `location` con barra final y `fastcgi_pass`): añadido `location = /api` que sirve `index.html` con las cabeceras del shell. Además `/api/` llega a Laravel como `api` (quita la barra) y caía en el 404 HTML de Laravel: el fallback pasa a `/api/{path?}`. | `curl` a :8081: `/api` 200 shell `no-cache`; `/api/` 404 JSON. `not-found.test.mts` `GET /api/` verde contra Laravel. `RoutingTest::test_api_root_is_the_json_404` visto en rojo y luego en verde. |
+| 4 | `BodyLimit` solo en un grupo | `$middleware->api(prepend: [BodyLimit::class])`: toda ruta de `routes/api.php` lo hereda; `/healthz` y el 404 lo quitan con `withoutMiddleware` (en Node tampoco leen el cuerpo). | `RoutingTest`: 500 sin `Cache-Control` ni CORS en `/api/deepseek`; `/healthz` y `/api/xyz` con 2 MB+1 → 200/404; una prueba recorre las rutas y exige el tope en cada endpoint. `curl` de 2 MB+1 a :8081 → 500 sin `Cache-Control`. |
+| 5 | `extra` puede pisar `code`/`message` (`ErrorMap`) | `array_diff_key($extra, code/message)` tras `code` y `message`: no los pisa y conserva el orden de claves (poner `extra` primero cambiaba el orden del JSON). | `ErrorMapTest::test_extra_can_never_override_code_or_message`, rojo → verde. |
+| 6 | `HealthController` se traga la excepción | `LoggerInterface::error('[healthz] base no disponible', {exception: clase, message})`; respuesta 503 idéntica. El mensaje de PDO/`QueryException` lleva host, puerto y base, nunca la contraseña ni `DATABASE_URL`. | `HealthControllerTest::test_database_down_is_503_and_is_logged_without_changing_the_response` (Mockery de conexión y logger). No se vio en rojo (escrito con Docker caído junto al arreglo). |
+| 7 | JSON de error escrito a mano 3 veces | `ApiJson::bare(status, code, message, cacheControl = 'no-store')`, sin CORS ni charset; lo usan `GoneController`, `NotFoundController`, `BodyLimit` (con `null`) y el 500 de `/healthz`. | `tests/Unit/Http/ApiResponseTest.php` (rojo → verde): cuerpos byte a byte de `gone`, `not_found` y `server_error`. |
+| 8 | `Controller.php` muerto | Borrado. | Sin referencias; PHPUnit verde. |
+| 9 | `ClientIp` con más saltos que cadena | Se mantiene la paridad con `ipDeProxy`: gana la de más a la izquierda (la pudo escribir el cliente; es un `TRUST_PROXY` mal configurado). | `ClientIpTest::test_more_hops_than_chain_falls_back_to_the_leftmost_entry` (caracteriza; verde desde el principio). |
+| — | `tsconfig.json` recorría `backend/vendor` | `"backend"` en `exclude`. | `npm run check`: 182 archivos, 0 errores, 0 avisos, 0 pistas. |
+
+### Hallado al verificar (fuera de la revisión)
+
+- **Symfony reescribe `Cache-Control`** en todas las respuestas PHP: `no-store` → `no-store, private`; sin cabecera → `no-cache, private`; directivas ordenadas (`public, max-age=120` → `max-age=120, public`). El contrato compara la cadena exacta (`health`, `not-found`, `deepseek`, `body-limits` sin cabecera, `readings` `public, max-age=120`, `ai-chat` `no-store, no-transform`). Arreglo: `App\Http\Support\ApiResponse`, subclase de `Response` con una `ResponseHeaderBag` que no recalcula `Cache-Control` y lo quita si queda vacío (Symfony 8.1 exige pasar la bolsa por el constructor). La usan `ApiJson::json`, `preflight`, `bare` y `HealthController`. Los tests PHP que solo miraban `assertStringContainsString('no-store')` pasan a `assertSame`.
+- **`phpunit.xml` sin `force="true"`**: las variables del contenedor (`APP_ENV=local`, `DATABASE_URL=…/ruta`) ganaban a las del XML, así que los tests no corrían contra `ruta_test`. Añadido `force="true"` a todas, y `cacheResult="false"` (el volumen montado no es escribible por `www-data`).
+- **Volumen montado sin escritura para `www-data`**: la vista del 404 de Laravel no compilaba. `VIEW_COMPILED_PATH=/tmp/views` en `compose.yml`.
+- **`docker/nginx/Dockerfile.dockerignore`** excluía `docker/` entero, incluidos los `.conf` que copia: el build fallaba. Ahora `docker/*` + `!docker/nginx`.
+- No existía `backend/.env` y PHPUnit avisaba (phpdotenv). Paso de instalación estándar: `cp backend/.env.example backend/.env` (ignorado por git; `environment:` de compose manda sobre él).
+- Pendiente, sin tocar (decisión de paridad para la fase 4): `ApiJson::ENCODE_FLAGS` lleva `JSON_PRESERVE_ZERO_FRACTION` y `ApiJsonTest` fija `"n":0.0`, pero `JSON.stringify(0.0)` da `0`. Un float entero saldría distinto que en Node.
+
+### Cierre de la fase con Docker (29.6.1)
+
+1. `composer:2.10 install` (el tag existe; versiones sin cambios): `vendor/` completo.
+2. `php artisan --version` → **Laravel Framework 13.40.0**.
+3. `php artisan test` → **103 passed (365 assertions)**, 0 avisos, ~17 s (antes de los arreglos de esta sesión: 1 fallo y 31 avisos).
+4. `--profile local up -d --build --wait`: todo `healthy`, `migrate` sale con 0. `curl -i :8081/healthz` → 200 `{"ok":true}`, `Content-Type: application/json`, `Cache-Control: no-store`; `/` y `/plan` → shell HTML `no-cache` con nosniff/Referrer-Policy/X-Frame-Options; `/api/deepseek` → 410 exacto.
+5. Contrato contra Laravel (`--profile contract`; `BASE_URL=http://localhost:8081`, `CONTRACT_DATABASE_URL=…@localhost:5435/ruta`, `MAILPIT_URL=http://localhost:8027`, `FAKE_DEEPSEEK_URL=http://localhost:8791`): `health` 3/3, `deepseek` 5/5, `not-found` 6/6 **verdes**; `cors` 0/14 rojo, esperado: los 14 casos usan endpoints que aún no existen en Laravel (fase 4) y caen en el 404. Total 14/28.
+6. Stack abajo (`down`). Contenedores ajenos (`reyco-*`) sin tocar; sin choques de puertos (5435/8027/8081/8791).
+
+- Front: `npm test` 94/0, `npm run test:plan` correcto, `npm run check` 0/0/0.
+- Tareas: 2.1, 2.2, 2.4–2.9 `[x]`. 2.3 queda `[ ]`: el contrato de health pasa contra Laravel, pero no se vio en rojo antes (el controlador ya existía). 2.10 sigue abierta: falta repetir la batería entera contra Node.
+- Comandos de esta fase, ahora con `--env-file docker/local.env` (ver cabecera de `docker/compose.yml`).
