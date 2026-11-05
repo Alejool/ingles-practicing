@@ -28,3 +28,12 @@ Do not implement anything listed under "Non-Goals" in a feature's spec.md, even 
 1. Read `specs/[feature]/progress.md` to understand where the previous session left off
 2. Run the full test suite and build to verify the current state matches the last checkpoint
 3. Pick up from the first incomplete task in tasks.md
+
+## Git
+
+Applies the global "Git Workflow" rules. Project-specific values:
+- **Language**: commit messages, branch names and PR titles/descriptions in **English** (Conventional Commits). Specs and docs stay in Spanish.
+- **Main branch**: `master` — pushing to it deploys production (Netlify). Never push or merge to `master` without the owner's explicit OK.
+- **Current work branch**: `redesign/ui` (backend Laravel, harness and redesign). New feature branches start from it until it is merged.
+- **Before committing**: `npm test`, `npm run test:plan` and `npm run check`; once `backend/` exists, also its PHPUnit suite inside Docker.
+- **Scopes**: `api`, `auth`, `quota`, `progress`, `library`, `ai`, `harness`, `learner`, `ui`, `plan`, `content`, `db`, `docker`, `specs`.
