@@ -96,3 +96,66 @@ Nota: `src/scripts/state.ts` lo tocan C1 1.3 y C1 2.x; van en ese orden dentro d
 - Persona que hace la revisión humana del contenido C1 (C1 9.2; sin ella la ruta no pasa de borrador).
 - Permiso para gastar unas 12 llamadas reales a la IA en los casos de prueba del modelo (TUT 7.4).
 - Los supuestos adoptados al principio de cada `plan.md`.
+
+## Añadido 2026-11-05: backend separado y harness del alumno
+
+Dos features nuevas, solo especificadas (`spec.md`; faltan `plan.md` y `tasks.md`). Abreviaturas: **BES** = `specs/backend-separado/`, **HAR** = `specs/harness-alumno/`.
+
+### Dónde entran en el orden
+
+6. **BES**, después de que SEL esté cerrado y de que C1 (fases de código) y TUT estén en un punto de control. BES mueve `src/` a `frontend/` y `netlify/functions/` a `backend/`: cualquier tarea a medias sobre esos archivos se rebasa a mano. Se hace en un commit de solo movimientos, sin otras ramas abiertas sobre esos archivos, y a continuación se actualizan las rutas de las `tasks.md` pendientes.
+7. **TUT fases 1 y 2 (servidor)** pasan a ir **después de BES**: tocan `_quota.mts`, `ai-chat.mts` y `shared/prompts.ts`, que BES mueve. TUT fase 3 (lógica de cliente) puede seguir antes o después; tras BES solo cambian sus rutas.
+8. **HAR**, después de BES y de TUT fase 2: reutiliza los puntos de entrada, la regla de disponibilidad y el tipo de petición contextual de TUT (ver "Relación con otras features" en `specs/harness-alumno/spec.md`), y necesita `shared/tracks.ts` (C1 fase 1).
+
+**C1 fase 7 (contenido)** sigue sin esperar a nadie; tras BES sus archivos están en `frontend/src/data/b2c1/` (git sigue el movimiento).
+
+### Dependencias nuevas
+
+| Tarea | Necesita antes | Motivo |
+|---|---|---|
+| BES (movimiento de archivos) | SEL cerrado; C1 y TUT en punto de control | Evitar conflictos de rutas con trabajo a medias. |
+| BES (retirar `netlify.toml`, `vercel.json`, `api/`, `server/index.mts`) | Visto bueno del dueño | Es un borrado; `.agentflow/CONTEXT.md` dice "sin borrados". |
+| BES en `master` | VPS listo y OK de despliegue | Un push a `master` publica en Netlify; sin `netlify.toml` el sitio se rompe. |
+| TUT 1.x, 2.x | BES | Mismos archivos de servidor. |
+| HAR (todo) | BES; TUT fase 2; C1 fase 1 (`shared/tracks.ts`) | Ejecuciones de 45 s no caben en serverless; superficie y tipo de petición de TUT; lista única de rutas. |
+
+### Archivos que tocan varias listas (añadidos)
+
+| Archivo | Orden |
+|---|---|
+| `netlify/functions/*` → `backend/…` | SEG → C1 1.5 y 2.x → BES (movimiento) → TUT fase 2 → HAR |
+| `shared/prompts.ts` | TUT 2.2 → C1 4.7 → HAR (los tres después de BES si BES ya ocurrió) |
+| `db/schema.sql` | BES (solo lo mueve) → HAR (añade tablas) |
+| `src/**` → `frontend/src/**` | Todas las listas abiertas → BES (movimiento) |
+
+### Lo que espera una decisión (añadido)
+
+- Preguntas abiertas de BES (dónde se publica el front, workspaces, corte de `master`) y de HAR (presupuesto de 3 créditos por ejecución, tipos de ajuste del plan, fuente de eventos, supresión de datos, dependencia para validar JSON).
+- Si TUT se mantiene con su servidor pausado hasta BES y el harness la reutiliza (recomendación de `specs/harness-alumno/spec.md`), o se decide otra cosa.
+
+## Añadido 2026-11-05 (2): backend en Laravel hexagonal
+
+Sustituye en lo que choque a la sección anterior (que suponía un backend Node). Planes: `specs/backend-separado/{plan,tasks}.md`, `specs/harness-alumno/{plan,tasks}.md`; ADRs en `docs/adr/0001…0003`.
+
+### Qué cambia en el orden
+
+6. **BES** se hace en este orden interno: contratos HTTP contra la API Node (fase 1) → Laravel en `backend/` + `docker/` (fases 2–5, todo archivos nuevos) → retirada de Node y movimiento del front a `frontend/` (fase 6, con autorización). Mientras dura, `src/` **no se mueve**: SEL, C1 (contenido y cliente) y TUT fase 3 pueden seguir en sus rutas actuales hasta la fase 6.
+   - Requisito para empezar BES fase 1: C1 fases 1 y 2 hechas (tocan `pulse.mts`, `progress.mts`, `readings.mts`), para que los contratos fijen ese comportamiento.
+   - **Desde BES 1.13 la API Node queda congelada**: cualquier cambio en `netlify/functions/` exige actualizar en la misma tarea el contrato (`tests/contract/`) y su versión en Laravel.
+7. **TUT fases 1 y 2 (servidor)** se implementan **en Laravel** después de BES fase 5 (`shared/prompts.ts` sigue siendo la fuente; se regenera `backend/tests/fixtures/prompts.json` y se adapta `Ai\Domain\PromptBuilder`; el arreglo de `X-Quota-Remaining` cambia un contrato en esa misma tarea). Sus rutas de `tasks.md` se reescriben en BES 6.5.
+8. **HAR** después de BES (fase 5 como mínimo) y de TUT fase 2; vive en `backend/src/Learner` y `frontend/src/features/{harness,learner}`.
+
+### Archivos que tocan varias listas (añadidos)
+
+| Archivo | Orden |
+|---|---|
+| `netlify/functions/*` | C1 1.x/2.x → BES 1.13 (congelada) → BES 6.1 (borrado, autorización) |
+| `shared/prompts.ts` | TUT 2.2 → C1 4.7 → (cada cambio regenera el fixture del backend); se mueve a `frontend/shared/` en BES 6.2 |
+| `db/schema.sql` | congelado (espejo de producción); se mueve a `backend/database/schema.sql` en BES 6.2. HAR no lo toca: sus tablas van por migración |
+| `src/scripts/progress.ts`, `views/grammar.ts`, `views/plan.ts` | SEL/TUT/C1 → HAR 10.7 (gancho de eventos y refs) |
+| `src/components/views/Account.astro`, `Plan.astro` | → HAR 10.8 (puntos de montaje) |
+
+### Lo que espera una decisión (añadido)
+
+- Punto de control 1 del dueño sobre los dos planes y los ADRs (defaults D-1…D-5 y H-1…H-9).
+- Autorizaciones marcadas **[AUT]** en las dos `tasks.md`.
