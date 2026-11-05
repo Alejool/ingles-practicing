@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maqueta rediseño limpio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wdth,wght@75..100,400..700&display=swap" rel="stylesheet">
+<style>
+/* ── Fichas ───────────────────────────────────────────────────────────
+   Mismos colores que la paleta v2 de src/styles/global.css; cambian los
+   papeles: el blanco es la zona de trabajo y el gris #EAECF0 marca lo que
+   no es contenido (lateral, cifras, hover). Petróleo = activo, elegido,
+   foco. Naranja = solo el relleno de la única acción principal. */
+:root{
+  --bg:#FFFFFF; --bg-muted:#EAECF0; --bg-hover:#DDE0E6; --bg-active:#FFFFFF;
+  --ink:#000000; --ink-2:#3B4F5C; --ink-3:#55656F; --nav-active-ink:#233D4D; --on-accent:#FFFFFF;
+  --border:#D3D7DD; --border-control:#74808A;
+  --accent:#233D4D; --accent-soft:#DFE6EA; --accent-ink:#16303F;
+  --fill:#FE7F2D; --fill-hover:#E96C17; --on-fill:#000000;
+  --ok:#1F6B45; --ok-soft:#DCEBE2; --bad:#A3352E; --bad-soft:#F5E0DD; --warn:#6F5800; --warn-soft:#F2ECCB;
+  --focus:#233D4D;
+  --shadow-dialog:0 24px 48px -12px rgba(11,19,24,.28), 0 2px 6px rgba(11,19,24,.10);
+  --scrim:rgba(11,19,24,.40);
+
+  --font:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
+  --t-display:32px; --t-stat:32px; --t-h2:20px; --t-h3:17px; --t-body:15px; --t-small:13px; --t-micro:12px;
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px; --s10:40px; --s12:48px;
+  --r-lg:14px; --r-md:12px; --r-sm:8px; --r-xs:6px;
+
+  --d-fast:120ms; --d-base:160ms; --d-slow:200ms;
+  --ease-out:cubic-bezier(.23,1,.32,1); --ease-drawer:cubic-bezier(.32,.72,0,1);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1318; --bg-muted:#142630; --bg-hover:#1C3341; --bg-active:#233D4D;
+    --ink:#F3F5F6; --ink-2:#C9D2D8; --ink-3:#B4C0C7; --nav-active-ink:#EAF3F8; --on-accent:#0B1318;
+    --border:#2A4352; --border-control:#8499A5;
+    --accent:#A9CDE2; --accent-soft:#2F5063; --accent-ink:#EAF3F8;
+    --ok:#7FCFA0; --ok-soft:#1D4A3F; --bad:#F2A59A; --bad-soft:#55303A; --warn:#E2C766; --warn-soft:#46412B;
+    --focus:#A9CDE2;
+    --shadow-dialog:0 24px 48px -12px rgba(0,0,0,.7), 0 2px 6px rgba(0,0,0,.5);
+    --scrim:rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1318; --bg-muted:#142630; --bg-hover:#1C3341; --bg-active:#233D4D;
+  --ink:#F3F5F6; --ink-2:#C9D2D8; --ink-3:#B4C0C7; --nav-active-ink:#EAF3F8; --on-accent:#0B1318;
+  --border:#2A4352; --border-control:#8499A5;
+  --accent:#A9CDE2; --accent-soft:#2F5063; --accent-ink:#EAF3F8;
+  --ok:#7FCFA0; --ok-soft:#1D4A3F; --bad:#F2A59A; --bad-soft:#55303A; --warn:#E2C766; --warn-soft:#46412B;
+  --focus:#A9CDE2;
+  --shadow-dialog:0 24px 48px -12px rgba(0,0,0,.7), 0 2px 6px rgba(0,0,0,.5);
+  --scrim:rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:var(--t-body);line-height:24px;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+h1,h2,h3,p{margin:0}
+button{font:inherit;color:inherit}
+svg.i{width:18px;height:18px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+svg.i-sm{width:16px;height:16px}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+h1:focus{outline:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ── tipografía ── */
+.display{font-size:var(--t-display);line-height:38px;font-weight:600;font-stretch:87.5%;letter-spacing:-.01em;text-wrap:balance}
+.h2{font-size:var(--t-h2);line-height:28px;font-weight:600;text-wrap:balance}
+.h3{font-size:var(--t-h3);line-height:24px;font-weight:600}
+.lede{color:var(--ink-2);max-width:62ch}
+.small{font-size:var(--t-small);line-height:20px;color:var(--ink-2)}
+.micro{font-size:var(--t-micro);line-height:16px;font-weight:500;color:var(--ink-3)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ── shell ── */
+.app{display:grid;grid-template-columns:256px minmax(0,1fr);min-height:100vh;min-height:100dvh}
+.side{background:var(--bg-muted);display:flex;flex-direction:column;gap:var(--s4);padding:var(--s4) var(--s3);position:sticky;top:0;height:100vh;height:100dvh;overflow-y:auto}
+.main{min-width:0;padding:var(--s10) var(--s12) var(--s12)}
+.view{max-width:1040px;margin:0 auto;display:none}
+.view.on{display:block}
+
+.route{display:flex;align-items:center;gap:var(--s3);width:100%;text-align:left;background:var(--bg-active);border:1px solid var(--border-control);border-radius:var(--r-md);padding:var(--s2) var(--s3);cursor:pointer;min-height:52px;transition:border-color var(--d-fast) ease}
+.route:hover{border-color:var(--ink-2)}
+.route .who{flex:1;min-width:0;display:flex;flex-direction:column}
+.route .who b{font-weight:600;font-size:15px;line-height:20px}
+.route .who span{font-size:var(--t-micro);line-height:16px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.group{display:flex;flex-direction:column;gap:2px}
+.group-label{padding:0 var(--s3);margin:var(--s2) 0 var(--s1)}
+.nav-item{display:flex;align-items:center;gap:var(--s3);width:100%;min-height:40px;padding:var(--s2) var(--s3);border:1px solid transparent;border-radius:10px;background:none;text-align:left;cursor:pointer;color:var(--ink-2);font-size:14px;line-height:20px;font-weight:500;transition:background-color var(--d-fast) ease,color var(--d-fast) ease}
+.nav-item:hover{background:var(--bg-hover);color:var(--ink)}
+.nav-item[aria-current="page"]{background:var(--bg-active);color:var(--nav-active-ink);border-color:var(--border);font-weight:600}
+.nav-item[aria-current="page"] svg.i{color:var(--accent)}
+.nav-item .count{margin-left:auto;font-size:var(--t-micro);font-weight:600;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.side-foot{margin-top:auto;padding-top:var(--s3);border-top:1px solid var(--border)}
+.mock-only{margin-top:var(--s2);border:1px dashed var(--border-control);border-radius:10px;padding:var(--s1)}
+
+.topbar{display:none}
+.scrim{display:none}
+
+/* ── encabezado de vista ── */
+.vhead{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s6);flex-wrap:wrap;margin-bottom:var(--s8)}
+.vhead .t{display:flex;flex-direction:column;gap:var(--s2);min-width:0}
+.crumb{font-size:var(--t-small);line-height:20px;color:var(--ink-3);font-weight:500}
+
+/* ── controles ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);min-height:40px;padding:var(--s2) var(--s4);border-radius:var(--r-sm);border:1px solid transparent;font-size:14px;line-height:20px;font-weight:600;cursor:pointer;text-decoration:none;transition:background-color var(--d-fast) ease,border-color var(--d-fast) ease,transform var(--d-base) var(--ease-out);white-space:nowrap}
+.btn:active:not(:disabled){transform:scale(.97)}
+.btn-primary{background:var(--fill);color:var(--on-fill)}
+.btn-primary:hover:not(:disabled),.btn-primary.is-hover{background:var(--fill-hover)}
+.btn-secondary{background:var(--bg);color:var(--ink);border-color:var(--border-control)}
+.btn-secondary:hover:not(:disabled),.btn-secondary.is-hover{background:var(--bg-muted)}
+.btn-quiet{background:transparent;color:var(--accent);padding-inline:var(--s3)}
+.btn-quiet:hover:not(:disabled){background:var(--bg-muted)}
+.btn:disabled{background:var(--bg-muted);color:var(--ink-3);border-color:transparent;cursor:not-allowed}
+.btn.is-focus{outline:2px solid var(--focus);outline-offset:2px}
+.btn[aria-busy="true"]{cursor:progress}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.field{display:flex;flex-direction:column;gap:var(--s1);max-width:360px}
+.field label{font-size:var(--t-small);line-height:20px;font-weight:600;color:var(--ink)}
+.input{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--border-control);border-radius:var(--r-sm);min-height:44px;padding:var(--s2) var(--s3);width:100%;transition:border-color var(--d-fast) ease}
+.input::placeholder{color:var(--ink-3)}
+.input:hover:not(:disabled):not(:focus),.input.is-hover{border-color:var(--ink-2)}
+.input:focus,.input.is-focus{outline:none;border-color:var(--focus);box-shadow:0 0 0 1px var(--focus)}
+.input[aria-invalid="true"]{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
+.input:disabled{background:var(--bg-muted);color:var(--ink-3);border-color:var(--border)}
+.hint{font-size:var(--t-small);line-height:20px;color:var(--ink-3)}
+.hint.err{color:var(--bad);display:flex;gap:var(--s1);align-items:flex-start}
+
+.chip{display:inline-flex;align-items:center;gap:var(--s1);font-size:var(--t-micro);line-height:16px;font-weight:600;padding:var(--s1) var(--s2);border-radius:var(--r-xs);background:var(--bg-muted);color:var(--ink-2);white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.a{background:var(--accent-soft);color:var(--accent-ink)}
+
+/* ── contenedores ── */
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-lg);padding:var(--s6)}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s4);margin-bottom:var(--s4)}
+.stack{display:flex;flex-direction:column}
+.g-8{gap:var(--s2)} .g-16{gap:var(--s4)}
+.row{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap}
+
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3);margin-bottom:var(--s6)}
+.tile{background:var(--bg-muted);border-radius:var(--r-lg);padding:var(--s5);display:flex;flex-direction:column;gap:var(--s1);min-width:0}
+.tile .l{font-size:var(--t-small);line-height:20px;font-weight:600;color:var(--ink-2)}
+.tile .v{font-size:var(--t-stat);line-height:36px;font-weight:600;font-stretch:87.5%;letter-spacing:-.01em;margin-top:var(--s2);font-variant-numeric:tabular-nums}
+.tile .v small{font-size:20px;color:var(--ink-3);font-weight:500}
+.tile .s{font-size:var(--t-small);line-height:20px;color:var(--ink-3)}
+
+.split{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:var(--s6);margin-top:var(--s6)}
+
+.blocks{list-style:none;margin:0;padding:0;border-top:1px solid var(--border)}
+.blocks li{display:grid;grid-template-columns:72px 128px minmax(0,1fr);gap:var(--s3);padding:var(--s3) 0;border-bottom:1px solid var(--border);align-items:baseline}
+.blocks .min{font-size:var(--t-small);color:var(--ink-3);font-variant-numeric:tabular-nums}
+.blocks .nm{font-weight:600;font-size:14px}
+.blocks .wh{font-size:14px;line-height:20px;color:var(--ink-2)}
+
+.rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--s2)}
+.rowcard{position:relative;display:flex;align-items:center;gap:var(--s4);padding:var(--s4);border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg);transition:background-color var(--d-fast) ease}
+.rowcard:hover{background:var(--bg-muted)}
+.rowcard[aria-current="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.badge{width:40px;height:40px;border-radius:10px;background:var(--bg-muted);color:var(--ink);display:grid;place-items:center;font-size:13px;font-weight:700;font-stretch:87.5%;flex:0 0 auto}
+.badge-sm{width:32px;height:32px;border-radius:var(--r-sm)}
+.badge-accent{background:var(--accent);color:var(--on-accent)}
+.rowcard:hover .badge{background:var(--bg)}
+.rowcard[aria-current="true"] .badge{background:var(--accent);color:var(--on-accent)}
+.rowcard .tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.rowcard .tx b{font-weight:600;font-size:15px;line-height:22px;overflow-wrap:anywhere}
+.rowcard .tx span{font-size:var(--t-small);line-height:20px;color:var(--ink-3)}
+.rowcard[aria-current="true"] .tx span{color:var(--ink-2)}
+.rowcard .act{opacity:0;transition:opacity var(--d-fast) ease}
+.rowcard:hover .act,.rowcard:focus-within .act{opacity:1}
+@media (hover:none){.rowcard .act{opacity:1}}
+.rowcard .act::after{content:"";position:absolute;inset:0;border-radius:inherit}
+@supports selector(:has(*)){
+  .rowcard .act:focus-visible{outline:none}
+  .rowcard:has(.act:focus-visible){outline:2px solid var(--focus);outline-offset:2px}
+}
+
+.meter{display:grid;grid-template-columns:120px minmax(0,1fr) 44px;gap:var(--s3);align-items:center;padding:var(--s2) 0}
+.bar{display:block;height:6px;border-radius:3px;background:var(--bg-muted);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.bar.low i{background:var(--bad)}
+.bar-fixed{width:160px}
+.meter .v{text-align:right;font-size:var(--t-small);font-weight:600;font-variant-numeric:tabular-nums}
+
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--s2)}
+.step{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:var(--s4);align-items:start;padding:var(--s4);border:1px solid var(--border);border-radius:var(--r-md)}
+.step .dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--border-control);color:var(--ink-3);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.step[data-state="done"] .dot{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.step[data-state="done"] .nm{color:var(--ink-2)}
+.step[data-state="current"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.step[data-state="current"] .dot{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.step .nm{font-weight:600}
+.step .side-act{grid-column:3}
+.step .meta{font-size:var(--t-small);line-height:20px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.step .wh{font-size:14px;line-height:20px;color:var(--ink-2);margin-top:var(--s1);max-width:64ch}
+.step .body{display:flex;flex-direction:column;gap:var(--s3)}
+.daynav{display:flex;gap:var(--s2);align-items:center}
+
+.filters{display:flex;gap:var(--s2);flex-wrap:wrap;margin-bottom:var(--s5)}
+.btn-sm{min-height:36px;padding:var(--s1) var(--s3);font-weight:500}
+.btn-secondary[aria-pressed="true"],.btn-secondary[aria-pressed="true"]:hover:not(:disabled){background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn .c{font-size:var(--t-micro);font-weight:600;font-variant-numeric:tabular-nums}
+
+.sheet{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s6)}
+.spec{display:flex;flex-direction:column;gap:var(--s2);align-items:flex-start}
+.spec .cap{font-size:var(--t-micro);line-height:16px;color:var(--ink-3);font-weight:500}
+.swatches{display:flex;gap:var(--s4);flex-wrap:wrap}
+.empty{display:flex;flex-direction:column;align-items:flex-start;gap:var(--s3);padding:var(--s8) var(--s6);border:1px dashed var(--border-control);border-radius:var(--r-lg)}
+.banner{display:flex;gap:var(--s3);align-items:flex-start;flex-wrap:wrap;padding:var(--s4);border-radius:var(--r-md);background:var(--bad-soft);color:var(--ink);border:1px solid var(--bad)}
+.banner svg.i{color:var(--bad);margin-top:3px}
+.banner .tx{flex:1 1 220px;display:flex;flex-direction:column;gap:var(--s1)}
+.banner b{font-weight:600}
+.skel{height:12px;border-radius:4px;background:var(--bg-muted)}
+
+dialog{border:1px solid var(--border);border-radius:var(--r-lg);padding:0;background:var(--bg);color:var(--ink);box-shadow:var(--shadow-dialog);width:min(480px,calc(100vw - 32px));max-height:calc(100dvh - 32px)}
+dialog::backdrop{background:var(--scrim)}
+dialog[open]{animation:pop var(--d-slow) var(--ease-out)}
+@keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+.dlg{padding:var(--s6);display:flex;flex-direction:column;gap:var(--s4)}
+.opt{display:flex;gap:var(--s3);align-items:flex-start;padding:var(--s4);border:1px solid var(--border);border-radius:var(--r-md);cursor:pointer;transition:background-color var(--d-fast) ease}
+.opt:hover{background:var(--bg-muted)}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt:has(input:checked) .micro{color:var(--ink-2)}
+.opt:has(input:focus-visible){outline:2px solid var(--focus);outline-offset:2px}
+.opt input{accent-color:var(--accent);width:18px;height:18px;margin:3px 0 0;flex:0 0 auto}
+.opt .tx{display:flex;flex-direction:column;gap:2px}
+.note{font-size:14px;line-height:20px;color:var(--ink-2);background:var(--bg-muted);border-radius:var(--r-sm);padding:var(--s3)}
+.dlg-actions{display:flex;gap:var(--s2);justify-content:flex-end;flex-wrap:wrap}
+
+/* ── móvil: barra superior + cajón ── */
+@media (max-width:1100px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:959px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .topbar{display:flex;align-items:center;gap:var(--s2);position:sticky;top:0;z-index:20;min-height:56px;padding:env(safe-area-inset-top) var(--s2) 0 var(--s1);background:var(--bg);border-bottom:1px solid var(--border)}
+  .topbar .here{flex:1;min-width:0;font-weight:600;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .iconbtn{width:44px;height:44px;display:grid;place-items:center;border:0;background:none;border-radius:10px;cursor:pointer;color:var(--ink)}
+  .iconbtn:hover{background:var(--bg-muted)}
+  .routechip{min-height:44px;display:inline-flex;align-items:center;gap:var(--s1);padding:0 var(--s3);border-radius:10px;border:1px solid var(--border-control);background:var(--bg);color:var(--ink);font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap}
+  .side{position:fixed;inset:0 auto 0 0;z-index:40;width:min(300px,86vw);height:100dvh;transform:translateX(-100%);transition:transform var(--d-slow) var(--ease-drawer),visibility 0s linear var(--d-slow);visibility:hidden}
+  .side.open{transform:none;visibility:visible;transition:transform var(--d-slow) var(--ease-drawer)}
+  .scrim{display:block;position:fixed;inset:0;z-index:30;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity var(--d-slow) ease}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .side .route{display:none}
+  .nav-item{min-height:44px}
+  .main{padding:var(--s6) var(--s4) var(--s12)}
+  .display{font-size:26px;line-height:32px}
+  .vhead{margin-bottom:var(--s6)}
+  .card{padding:var(--s5) var(--s4)}
+  .sheet{grid-template-columns:minmax(0,1fr)}
+  .blocks li{grid-template-columns:72px minmax(0,1fr)}
+  .blocks .wh{grid-column:2}
+  .step{grid-template-columns:28px minmax(0,1fr);gap:var(--s3)}
+  .step .side-act{grid-column:2;justify-self:start}
+  .meter{grid-template-columns:104px minmax(0,1fr) 40px}
+  .btn{min-height:44px}
+}
+@media (max-width:420px){
+  .tile{padding:var(--s4)}
+  .tile .v{font-size:28px;line-height:32px}
+  .vhead .btn-primary{width:100%;white-space:normal}
+  .rowcard{gap:var(--s3);padding:var(--s3)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:0ms!important;animation-duration:0ms!important}
+  .spin{animation:none;border-right-color:currentColor;opacity:.5}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-panel" viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z"/></symbol>
+    <symbol id="i-plan" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M8 3v4M16 3v4M3.5 10h17M9 15l2 2 4-4"/></symbol>
+    <symbol id="i-vocab" viewBox="0 0 24 24"><rect x="3.5" y="7" width="13" height="13" rx="2"/><path d="M8 4h10.5a2 2 0 0 1 2 2v10.5"/></symbol>
+    <symbol id="i-mine" viewBox="0 0 24 24"><path d="M6 3.5h12v17l-6-4-6 4z"/></symbol>
+    <symbol id="i-gram" viewBox="0 0 24 24"><path d="M4.5 7V4.5h15V7M12 4.5v15M9 19.5h6"/></symbol>
+    <symbol id="i-uoe" viewBox="0 0 24 24"><path d="M8 4H5v16h3M16 4h3v16h-3M10 12h4"/></symbol>
+    <symbol id="i-input" viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><path d="M4 15h3v5H5a1 1 0 0 1-1-1zM20 15h-3v5h2a1 1 0 0 0 1-1z"/></symbol>
+    <symbol id="i-writing" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></symbol>
+    <symbol id="i-speak" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+    <symbol id="i-tutor" viewBox="0 0 24 24"><path d="M4 5h16v11H9.5L4 20z"/><path d="M8 9.5h8M8 12.5h5"/></symbol>
+    <symbol id="i-quiz" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2.5h4"/></symbol>
+    <symbol id="i-mock" viewBox="0 0 24 24"><path d="M9 3.5h6v3H9z"/><path d="M7 5H5v15.5h14V5h-2M9 12h6M9 16h4"/></symbol>
+    <symbol id="i-diag" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r=".8"/></symbol>
+    <symbol id="i-exam" viewBox="0 0 24 24"><path d="M5 21V3.5h11.5l-2 4 2 4H5"/></symbol>
+    <symbol id="i-errors" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V13M12 16.5v.01"/></symbol>
+    <symbol id="i-res" viewBox="0 0 24 24"><path d="M5 19.5V4.5M9.5 19.5V4.5M13.5 19.5 14 4.5M17.5 5l2.5 14.5"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+    <symbol id="i-account" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
+    <symbol id="i-theme" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-sel" viewBox="0 0 24 24"><path d="M8 9.5 12 5.5l4 4M8 14.5l4 4 4-4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 21 19.5H3z"/><path d="M12 10v4M12 17v.01"/></symbol>
+    <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <header class="topbar">
+    <button class="iconbtn" id="menuBtn" type="button" aria-label="Abrir menú" aria-controls="side" aria-expanded="false"><svg class="i"><use href="#i-menu"/></svg></button>
+    <span class="here" id="here">Panel</span>
+    <button class="routechip" type="button" data-open-route aria-label="Ruta actual: B1 → B2. Cambiar de ruta">B1 → B2 <svg class="i i-sm" aria-hidden="true"><use href="#i-sel"/></svg></button>
+  </header>
+  <div class="scrim" id="scrim"></div>
+
+  <aside class="side" id="side" aria-label="Menú">
+    <button class="route" type="button" data-open-route aria-label="Ruta actual: B1 → B2. Cambiar de ruta">
+      <span class="badge badge-sm badge-accent" aria-hidden="true">B2</span>
+      <span class="who"><b>B1 → B2</b><span>B2 First, día 37</span></span>
+      <svg class="i" aria-hidden="true"><use href="#i-sel"/></svg>
+    </button>
+    <nav aria-label="Módulos" class="stack g-16" id="nav"></nav>
+    <div class="side-foot group" id="opts"></div>
+  </aside>
+
+  <main class="main" id="main">
+
+    <!-- PANEL -->
+    <section class="view on" id="v-panel" aria-labelledby="t-panel">
+      <div class="vhead">
+        <div class="t">
+          <span class="crumb">Semana 8, bloque B</span>
+          <h1 class="display" tabindex="-1" id="t-panel">Dónde estás hoy</h1>
+          <p class="lede">Todo lo que haces mueve estos números. No hay que apuntar nada a mano.</p>
+        </div>
+      </div>
+
+      <div class="tiles" role="list">
+        <div class="tile" role="listitem"><span class="l">Nivel estimado</span><span class="v">B1.2</span><span class="s">24/30 en el diagnóstico</span></div>
+        <div class="tile" role="listitem"><span class="l">Días hechos</span><span class="v">36<small>/120</small></span><span class="s">30% del plan</span></div>
+        <div class="tile" role="listitem"><span class="l">Días seguidos</span><span class="v">6</span><span class="s">Mejor racha: 11</span></div>
+        <div class="tile" role="listitem"><span class="l">Tarjetas para hoy</span><span class="v">24</span><span class="s">de 314 en los mazos</span></div>
+      </div>
+
+      <section class="card" aria-labelledby="t-hoy">
+        <div class="card-head">
+          <div class="stack g-8">
+            <span class="micro">La sesión de hoy, 45 minutos</span>
+            <h2 class="h2" id="t-hoy">Día 37: incontables que en español sí son contables</h2>
+            <p class="small">Artículos e incontables, que es donde el hispanohablante se delata.</p>
+          </div>
+          <span class="chip warn">Consolidar</span>
+        </div>
+        <ol class="blocks">
+          <li><span class="min">0–8 min</span><span class="nm">Vocabulario</span><span class="wh">12 tarjetas, incluidas las que fallaste ayer.</span></li>
+          <li><span class="min">8–20 min</span><span class="nm">Gramática</span><span class="wh">Seis drills nuevos de la unidad 14, sin mirar la regla.</span></li>
+          <li><span class="min">20–34 min</span><span class="nm">Use of English</span><span class="wh">Seis ítems. Aquí es donde se gana velocidad.</span></li>
+          <li><span class="min">34–45 min</span><span class="nm">Producción</span><span class="wh">Escribe 10 frases con information, advice, news, research, furniture y equipment.</span></li>
+        </ol>
+        <div class="row" style="margin-top:var(--s5)">
+          <button class="btn btn-primary" type="button" data-go="plan">Empezar el día 37</button>
+          <button class="btn btn-secondary" type="button" data-go="vocab">24 tarjetas pendientes</button>
+        </div>
+      </section>
+
+      <div class="split">
+        <section class="card" aria-labelledby="t-next">
+          <div class="card-head"><div class="stack g-8"><h2 class="h3" id="t-next">Qué toca ahora</h2><p class="small">Lo más flojo primero, calculado con tus aciertos.</p></div></div>
+          <ul class="rows">
+            <li class="rowcard"><span class="badge" aria-hidden="true">UE</span><span class="tx"><b>Punto débil: Use of English</b><span>58% de aciertos en 41 ítems</span></span><button class="btn btn-quiet act" type="button" data-go="uoe">Practicar</button></li>
+            <li class="rowcard"><span class="badge" aria-hidden="true">VO</span><span class="tx"><b>24 tarjetas de vocabulario vencidas</b><span>Núcleo B2, Colocaciones y Phrasal verbs</span></span><button class="btn btn-quiet act" type="button" data-go="vocab">Repasar</button></li>
+            <li class="rowcard"><span class="badge" aria-hidden="true">MP</span><span class="tx"><b>7 palabras difíciles esperando que las escribas</b><span>19 en tu cuaderno</span></span><button class="btn btn-quiet act" type="button" data-go="mine">Escribirlas</button></li>
+            <li class="rowcard"><span class="badge" aria-hidden="true">SI</span><span class="tx"><b>Aún no has hecho un simulacro cronometrado</b><span>Tu línea de partida para el examen</span></span><button class="btn btn-quiet act" type="button" data-go="mock">Abrir</button></li>
+          </ul>
+        </section>
+        <section class="card" aria-labelledby="t-rad">
+          <div class="card-head"><div class="stack g-8"><h2 class="h3" id="t-rad">Dominio por destreza</h2><p class="small">Por debajo del 70% se marca en rojo.</p></div></div>
+          <div id="meters"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- PLAN -->
+    <section class="view" id="v-plan" aria-labelledby="t-plan">
+      <div class="vhead">
+        <div class="t">
+          <span class="crumb">Día 37 de 120, semana 8</span>
+          <h1 class="display" tabindex="-1" id="t-plan">Incontables que en español sí son contables</h1>
+          <p class="lede">Artículos e incontables, que es donde el hispanohablante se delata.</p>
+        </div>
+        <div class="daynav">
+          <button class="btn btn-secondary" type="button"><svg class="i" aria-hidden="true"><use href="#i-left"/></svg>Día 36<span class="sr">, anterior</span></button>
+          <button class="btn btn-secondary" type="button">Día 38<span class="sr">, siguiente</span><svg class="i" aria-hidden="true"><use href="#i-right"/></svg></button>
+        </div>
+      </div>
+
+      <div class="row" style="justify-content:space-between;margin-bottom:var(--s4)">
+        <div class="row"><span class="h3">Pasos de hoy</span><span class="chip warn">Consolidar</span><span class="small num">2 de 4 hechos</span></div>
+        <div class="bar bar-fixed" role="progressbar" aria-label="Pasos hechos" aria-valuemin="0" aria-valuemax="4" aria-valuenow="2"><i style="width:50%"></i></div>
+      </div>
+
+      <ol class="steps">
+        <li class="step" data-state="done">
+          <span class="dot" aria-hidden="true"><svg class="i i-sm"><use href="#i-check"/></svg></span>
+          <div class="body"><div><span class="nm">Vocabulario</span><div class="meta">0–8 min, hecho</div><p class="wh">12 tarjetas, incluidas las que fallaste ayer.</p></div></div>
+          <button class="btn btn-quiet side-act" type="button" aria-label="Repetir vocabulario">Repetir</button>
+        </li>
+        <li class="step" data-state="done">
+          <span class="dot" aria-hidden="true"><svg class="i i-sm"><use href="#i-check"/></svg></span>
+          <div class="body"><div><span class="nm">Gramática</span><div class="meta">8–20 min, hecho, 6 de 6 drills</div><p class="wh">Seis drills nuevos de la unidad 14, sin mirar la regla.</p></div></div>
+          <button class="btn btn-quiet side-act" type="button" aria-label="Repetir gramática">Repetir</button>
+        </li>
+        <li class="step" data-state="current" aria-current="step">
+          <span class="dot" aria-hidden="true">3</span>
+          <div class="body">
+            <div><span class="nm">Use of English</span><div class="meta">20–34 min, ahora</div><p class="wh">Seis ítems. Aquí es donde se gana velocidad.</p></div>
+            <div class="row"><button class="btn btn-primary" type="button">Hacer los seis ítems</button><span class="small">Open cloze de la unidad 14</span></div>
+          </div>
+        </li>
+        <li class="step" data-state="todo">
+          <span class="dot" aria-hidden="true">4</span>
+          <div class="body"><div><span class="nm">Producción</span><div class="meta">34–45 min, pendiente</div><p class="wh">Escribe 10 frases con information, advice, news, research, furniture y equipment.</p></div></div>
+        </li>
+      </ol>
+
+      <div class="row" style="margin-top:var(--s6);justify-content:space-between">
+        <p class="small">Si lo dejas aquí, los pasos que marcaste se conservan.</p>
+        <button class="btn btn-secondary" type="button">Dar el día por terminado</button>
+      </div>
+    </section>
+
+    <!-- VOCAB -->
+    <section class="view" id="v-vocab" aria-labelledby="t-vocab">
+      <div class="vhead">
+        <div class="t">
+          <span class="crumb">11 mazos, 314 palabras</span>
+          <h1 class="display" tabindex="-1" id="t-vocab">Vocabulario</h1>
+          <p class="lede">Elige un mazo. Las tarjetas que fallas vuelven antes; las que aciertas, cada vez más tarde.</p>
+        </div>
+        <button class="btn btn-primary" type="button">Repasar 12 tarjetas de Núcleo B2</button>
+      </div>
+
+      <div class="filters" role="group" aria-label="Familia de mazos" id="filters"></div>
+      <ul class="rows" id="decks"></ul>
+    </section>
+
+    <!-- ESTADOS -->
+    <section class="view" id="v-estados" aria-labelledby="t-est">
+      <div class="vhead"><div class="t"><span class="crumb">Solo maqueta</span><h1 class="display" tabindex="-1" id="t-est">Hoja de estados</h1><p class="lede">Cada tipo de control con todos sus estados, en el tema activo. Los estados forzados llevan una clase que los simula.</p></div></div>
+      <div class="sheet">
+        <section class="card stack g-16" aria-labelledby="t-b1">
+          <h2 class="h3" id="t-b1">Botón principal (uno por vista)</h2>
+          <div class="swatches">
+            <div class="spec"><button class="btn btn-primary" type="button">Empezar el día 37</button><span class="cap">Reposo</span></div>
+            <div class="spec"><button class="btn btn-primary is-hover" type="button">Empezar el día 37</button><span class="cap">Hover</span></div>
+            <div class="spec"><button class="btn btn-primary is-focus" type="button">Empezar el día 37</button><span class="cap">Foco con teclado</span></div>
+            <div class="spec"><button class="btn btn-primary" type="button" disabled>Empezar el día 37</button><span class="cap">Desactivado</span></div>
+            <div class="spec"><button class="btn btn-primary" type="button" aria-busy="true" aria-disabled="true"><span class="spin" aria-hidden="true"></span>Cargando el día</button><span class="cap">Cargando</span></div>
+          </div>
+          <h2 class="h3">Botón secundario</h2>
+          <div class="swatches">
+            <div class="spec"><button class="btn btn-secondary" type="button">Ver la unidad</button><span class="cap">Reposo</span></div>
+            <div class="spec"><button class="btn btn-secondary is-hover" type="button">Ver la unidad</button><span class="cap">Hover</span></div>
+            <div class="spec"><button class="btn btn-secondary is-focus" type="button">Ver la unidad</button><span class="cap">Foco</span></div>
+            <div class="spec"><button class="btn btn-secondary" type="button" disabled>Ver la unidad</button><span class="cap">Desactivado</span></div>
+          </div>
+          <p class="small">Prueba real: pulsa este botón (se encoge al apretar y muestra la carga) o recorre la página con Tab.</p>
+          <div><button class="btn btn-primary" type="button" id="demoLoad">Corregir mi texto</button></div>
+        </section>
+
+        <section class="card stack g-16" aria-labelledby="t-in">
+          <h2 class="h3" id="t-in">Campo de texto</h2>
+          <div class="field"><label for="f1">Palabra o expresión</label><input class="input" id="f1" placeholder="take into account"><span class="hint">Reposo. Se guarda en Mis palabras.</span></div>
+          <div class="field"><label for="f1h">Palabra o expresión</label><input class="input is-hover" id="f1h" value="take into account"><span class="hint">Hover: el borde se oscurece.</span></div>
+          <div class="field"><label for="f2">Palabra o expresión</label><input class="input is-focus" id="f2" value="furniture"><span class="hint">Foco: borde petróleo de 2 px.</span></div>
+          <div class="field"><label for="f3">Correo electrónico</label><input class="input" id="f3" value="alumno@correo" aria-invalid="true" aria-describedby="f3e"><span class="hint err" id="f3e"><svg class="i i-sm" style="margin-top:2px" aria-hidden="true"><use href="#i-alert"/></svg>Falta el dominio completo, por ejemplo alumno@correo.com.</span></div>
+          <div class="field"><label for="f4">Palabra o expresión</label><input class="input" id="f4" disabled value="Sin conexión"><span class="hint">Desactivado.</span></div>
+        </section>
+
+        <section class="card stack g-16" aria-labelledby="t-em">
+          <h2 class="h3" id="t-em">Vacío</h2>
+          <div class="empty">
+            <span class="badge"><svg class="i" aria-hidden="true"><use href="#i-mine"/></svg></span>
+            <h3 class="h3">El cuaderno está vacío</h3>
+            <p class="small" style="max-width:48ch">Añade la primera arriba, o pulsa «Al cuaderno» en cualquier tarjeta de vocabulario que falles.</p>
+            <button class="btn btn-secondary" type="button">Añadir una palabra</button>
+          </div>
+          <h2 class="h3">Cargando contenido</h2>
+          <div class="stack g-8" aria-busy="true" aria-label="Cargando lecturas"><div class="skel" style="width:60%"></div><div class="skel" style="width:90%"></div><div class="skel" style="width:75%"></div></div>
+        </section>
+
+        <section class="card stack g-16" aria-labelledby="t-er">
+          <h2 class="h3" id="t-er">Error</h2>
+          <div class="banner">
+            <svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>
+            <div class="tx"><b>No se pudo descargar A2 → B1: no hay conexión.</b><span class="small">Sigues en B1 → B2 con todo tu progreso. Vuelve a intentarlo cuando tengas red.</span></div>
+            <button class="btn btn-secondary" type="button">Reintentar</button>
+          </div>
+          <h2 class="h3">Etiquetas de estado</h2>
+          <div class="row"><span class="chip ok">al día</span><span class="chip warn">12 hoy</span><span class="chip bad">58%</span><span class="chip a">Activa</span><span class="chip">Sin intentos</span></div>
+          <h2 class="h3">Fila: reposo y elegida (pasa el ratón para el hover)</h2>
+          <ul class="rows">
+            <li class="rowcard"><span class="badge" aria-hidden="true">FA</span><span class="tx"><b>Falsos amigos</b><span>20 palabras</span></span><button class="btn btn-quiet act" type="button">Elegir</button></li>
+            <li class="rowcard" aria-current="true"><span class="badge" aria-hidden="true">B2</span><span class="tx"><b>Núcleo B2</b><span>24 palabras, elegido</span></span><button class="btn btn-quiet act" type="button">Elegir</button></li>
+          </ul>
+        </section>
+      </div>
+    </section>
+
+    <!-- vistas sin maquetar: título real + estado vacío -->
+    <section class="view" id="v-otra" aria-labelledby="t-otra">
+      <div class="vhead"><div class="t"><span class="crumb" id="otraCrumb"></span><h1 class="display" tabindex="-1" id="t-otra"></h1></div></div>
+      <div class="empty">
+        <span class="badge"><svg class="i" aria-hidden="true"><use href="#i-sheet"/></svg></span>
+        <h2 class="h3">Vista sin maquetar</h2>
+        <p class="small" style="max-width:56ch">Usa el mismo esqueleto: encabezado, cifras sobre gris si las hay, tarjetas blancas con borde de 1 px y filas. La maqueta cubre Panel, Plan diario, Vocabulario y la hoja de estados.</p>
+        <button class="btn btn-secondary" type="button" data-go="panel">Volver al panel</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<dialog id="routeDlg" aria-labelledby="dlgT">
+  <form method="dialog" class="dlg">
+    <div class="stack g-8"><h2 class="h2" id="dlgT">Cambiar de ruta</h2><p class="small">Cada ruta lleva su propio progreso. No se pierde nada al cambiar.</p></div>
+    <label class="opt"><input type="radio" name="r" value="b1b2" checked><span class="tx"><b>B1 → B2 <span class="chip a" style="margin-left:4px">Activa</span></b><span class="small">Te comunicas sin problema pero te falta precisión, léxico y estructuras complejas.</span><span class="micro">Cambridge B2 First, IELTS 5.5–6.5. Día 37 de 120.</span></span></label>
+    <label class="opt"><input type="radio" name="r" value="a2b1"><span class="tx"><b>A2 → B1</b><span class="small">Te defiendes con frases sueltas pero se te caen los tiempos verbales y las preguntas.</span><span class="micro">Cambridge A2 Key y B1 Preliminary. Sin empezar.</span></span></label>
+    <p class="note" id="dlgNote" hidden>Pasas a A2 → B1. Tu progreso en B1 → B2 se queda tal cual y puedes volver cuando quieras.</p>
+    <div class="dlg-actions">
+      <button class="btn btn-secondary" value="cancel" type="submit">Cancelar</button>
+      <button class="btn btn-primary" value="ok" type="submit" id="dlgOk" disabled>Elige otra ruta</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  const NAV = [
+    ["Estudiar", [
+      ["panel","Panel","panel"],["plan","Plan diario","plan"],["vocab","Vocabulario","vocab",24],["mine","Mis palabras","mine",7],
+      ["gram","Gramática","gram"],["uoe","Use of English","uoe"],["input","Listening & Reading","input"],["writing","Writing","writing"],
+      ["speak","Speaking","speak"],["tutor","Tutor","tutor"],["quiz","Prueba rápida","quiz"],["mock","Simulacro","mock"]]],
+    ["Atajos", [["diag","Diagnóstico","diag"],["examenes","Qué examen","exam"],["errors","Cuaderno de errores","errors"],["res","Recursos","res"]]],
+  ];
+  const OPTS = [["ajustes","Ajustes","settings"],["cuenta","Cuenta","account"]];
+  const TITLES = {examenes:"Qué examen presentar",diag:"Prueba de nivel",gram:"Las 18 unidades que deciden tu nota",mine:"El cuaderno de lo que se te atraganta",uoe:"Use of English",writing:"Escribir para el corrector",input:"Entrada: oír y leer con método",speak:"Hablar solo, con cronómetro y corrección",quiz:"Cinco minutos para saber por dónde vas",mock:"Examen cronometrado",errors:"Tu lista negra personal",tutor:"Conversación con corrección",res:"Con qué material trabajar",ajustes:"Configuración de la app",cuenta:"Entrar y sincronizar"};
+  const MOCKED = ["panel","plan","vocab","estados"];
+  const label = Object.fromEntries([...NAV.flatMap(([, items]) => items), ...OPTS].map(([id, txt]) => [id, txt]));
+  label.estados = "Hoja de estados";
+  const ico = n => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+  const item = ([id,txt,ic,count]) => `<button class="nav-item" type="button" data-go="${id}">${ico(ic)}<span>${txt}</span>${count ? `<span class="count"><span class="sr">, </span>${count}<span class="sr"> pendientes</span></span>` : ""}</button>`;
+
+  document.getElementById("nav").innerHTML = NAV.map(([g,items], i) =>
+    `<div class="group" role="group" aria-labelledby="g${i}"><span class="micro group-label" id="g${i}">${g}</span>${items.map(item).join("")}</div>`).join("");
+  document.getElementById("opts").innerHTML = `<span class="micro group-label">Opciones</span>` + OPTS.map(item).join("")
+    + `<button class="nav-item" type="button" id="themeBtn">${ico("theme")}<span id="themeTxt">Tema oscuro</span></button>`
+    + `<div class="mock-only"><button class="nav-item" type="button" data-go="estados">${ico("sheet")}<span>Hoja de estados</span></button></div>`;
+
+  const mainEl = document.getElementById("main"), topbar = document.querySelector(".topbar");
+  const side = document.getElementById("side"), scrim = document.getElementById("scrim"), menuBtn = document.getElementById("menuBtn");
+  const mq = matchMedia("(max-width:959px)");
+  const setDrawer = (open, returnFocus = true) => {
+    side.classList.toggle("open", open); scrim.classList.toggle("on", open);
+    mainEl.inert = open; topbar.inert = open;
+    menuBtn.setAttribute("aria-expanded", String(open));
+    if (open) (side.querySelector('[aria-current="page"]') || side.querySelector(".nav-item")).focus();
+    else if (returnFocus && mq.matches) menuBtn.focus();
+  };
+  menuBtn.addEventListener("click", () => setDrawer(true));
+  scrim.addEventListener("click", () => setDrawer(false));
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && side.classList.contains("open")) setDrawer(false); });
+  mq.addEventListener("change", () => { if (!mq.matches && side.classList.contains("open")) setDrawer(false, false); });
+
+  const go = (id, moveFocus = true) => {
+    const mocked = MOCKED.includes(id);
+    document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + (mocked ? id : "otra")));
+    if (!mocked) { document.getElementById("t-otra").textContent = TITLES[id] || label[id]; document.getElementById("otraCrumb").textContent = label[id]; }
+    document.querySelectorAll(".nav-item[data-go]").forEach(b => b.dataset.go === id ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current"));
+    document.getElementById("here").textContent = label[id] || "Panel";
+    if (side.classList.contains("open")) setDrawer(false, false);
+    scrollTo(0, 0);
+    if (moveFocus) document.querySelector(".view.on h1").focus({ preventScroll: true });
+    history.replaceState(null, "", "#" + id);
+  };
+  document.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) go(b.dataset.go); });
+
+  /* tema: sin elección sigue al sistema; el botón fija claro u oscuro */
+  const themeBtn = document.getElementById("themeBtn");
+  const effective = () => document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const paintTheme = () => { document.getElementById("themeTxt").textContent = effective() === "dark" ? "Tema claro" : "Tema oscuro"; };
+  themeBtn.addEventListener("click", () => { document.documentElement.dataset.theme = effective() === "dark" ? "light" : "dark"; paintTheme(); });
+  const qs = new URLSearchParams(location.search).get("theme");
+  if (qs === "dark" || qs === "light") document.documentElement.dataset.theme = qs;
+  paintTheme();
+
+  /* destrezas reales (SKILLS de progress.ts) con valores de ejemplo */
+  const SK = [["Gramática",74],["Vocabulario",81],["Mis palabras",66],["Use of English",58],["Reading",72],["Listening",62],["Diagnóstico",80],["Simulacro",null]];
+  document.getElementById("meters").innerHTML = SK.map(([n,p]) =>
+    `<div class="meter"><span class="small">${n}</span><span class="bar${p !== null && p < 70 ? " low" : ""}" aria-hidden="true"><i style="width:${p || 0}%"></i></span><span class="v"><span class="sr">${n}: </span>${p === null ? "—" : p + "%"}</span></div>`).join("");
+
+  /* mazos reales de la ruta B1 → B2 (src/data/b1b2/decks*.ts) */
+  const DECKS = [["B1","Núcleo B1",24,"Palabras comunes",0],["B2","Núcleo B2",24,"Palabras comunes",12],["CO","Colocaciones",22,"Colocaciones",5],["PV","Phrasal verbs",24,"Phrasal verbs",7],["FP","Formación de palabras",20,"Formación de palabras",0],["FA","Falsos amigos",20,"Falsos amigos",0],["PR","Preposiciones",20,"Preposiciones",0],["VE","Verbos",40,"Verbos",0],["AD","Adjetivos",40,"Adjetivos",0],["PC","Palabras compuestas",40,"Palabras compuestas",0],["CN","Conectores",40,"Conectores",0]];
+  let sel = "Núcleo B2", cat = null;
+  const cats = [...new Set(DECKS.map(d => d[3]))];
+  document.getElementById("filters").innerHTML = [["Todas", DECKS.length, ""], ...cats.map(c => [c, DECKS.filter(d => d[3] === c).length, c])]
+    .map(([t,n,c]) => `<button class="btn btn-secondary btn-sm" type="button" data-cat="${c}" aria-pressed="${c === ""}">${t} <span class="c">${n}</span></button>`).join("");
+  const paintDecks = () => {
+    document.querySelectorAll("[data-cat]").forEach(b => b.setAttribute("aria-pressed", String((b.dataset.cat || null) === cat)));
+    document.getElementById("decks").innerHTML = DECKS.filter(d => !cat || d[3] === cat).map(([ini,n,c,k,due]) =>
+      `<li class="rowcard"${n === sel ? ' aria-current="true"' : ""}><span class="badge" aria-hidden="true">${ini}</span><span class="tx"><b>${n}</b><span>${c} palabras</span></span><span class="chip ${due ? "warn" : "ok"}">${due ? due + " hoy" : "al día"}</span><button class="btn btn-quiet act" type="button" data-deck="${n}" aria-label="Elegir ${n}">Elegir</button></li>`).join("");
+  };
+  document.getElementById("v-vocab").addEventListener("click", e => {
+    const f = e.target.closest("[data-cat]"), d = e.target.closest("[data-deck]");
+    if (f) { cat = f.dataset.cat || null; paintDecks(); }
+    if (d) { sel = d.dataset.deck; paintDecks(); document.querySelector(`[data-deck="${d.dataset.deck}"]`).focus(); }
+  });
+  paintDecks();
+
+  /* diálogo de ruta (en la app real, specs/selector-de-ruta) */
+  const dlg = document.getElementById("routeDlg"), ok = document.getElementById("dlgOk"), note = document.getElementById("dlgNote");
+  const PICK_OTHER = "Elige otra ruta";
+  const resetDlg = () => { dlg.querySelector('input[value="b1b2"]').checked = true; ok.disabled = true; note.hidden = true; ok.textContent = PICK_OTHER; };
+  document.querySelectorAll("[data-open-route]").forEach(b => b.addEventListener("click", () => { if (side.classList.contains("open")) setDrawer(false, false); resetDlg(); dlg.showModal(); }));
+  dlg.addEventListener("change", () => {
+    const other = dlg.querySelector("input:checked").value !== "b1b2";
+    ok.disabled = !other; note.hidden = !other; ok.textContent = other ? "Cambiar a A2 → B1" : PICK_OTHER;
+  });
+
+  /* botón con carga real */
+  const dl = document.getElementById("demoLoad");
+  dl.addEventListener("click", () => {
+    if (dl.getAttribute("aria-busy") === "true") return;
+    dl.setAttribute("aria-busy", "true"); dl.innerHTML = '<span class="spin" aria-hidden="true"></span>Corrigiendo';
+    setTimeout(() => { dl.removeAttribute("aria-busy"); dl.textContent = "Corregir mi texto"; }, 1600);
+  });
+
+  const start = location.hash.slice(1);
+  go(label[start] ? start : "panel", false);
+})();
+</script>
+</body>
+</html>
