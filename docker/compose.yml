@@ -1,0 +1,132 @@
+# Stack de la API Laravel: web (nginx + front) → api (php-fpm) → db (Postgres), más el buzón.
+# No toca el docker-compose.yml de la raíz (API Node), que sigue siendo la referencia.
+#
+#   docker compose --env-file docker/local.env -f docker/compose.yml --profile local up -d --build --wait   → http://localhost:8081
+#   docker compose --env-file docker/local.env -f docker/compose.yml run --rm api php artisan test          → PHPUnit (base ruta_test)
+#   docker compose --env-file docker/local.env -f docker/compose.yml down
+#
+# APP_KEY es obligatoria (compose no arranca sin ella). En local y contrato la pone
+# docker/local.env (copia de docker/local.env.example, ignorada por git); en producción
+# se exporta la propia.
+#
+# Perfiles: `local` y `contract` añaden el servicio `migrate` (un solo uso);
+# `contract` añade además el DeepSeek simulado. Para la batería de contrato:
+#   API_ENV_FILE=../tests/contract/contract.env docker compose --env-file docker/local.env -f docker/compose.yml --profile contract up -d --build --wait
+#
+# El backend se monta como volumen: los cambios en backend/ se ven sin reconstruir.
+# Las dependencias (backend/vendor, con las de desarrollo) se instalan con:
+#   docker run --rm -v "$PWD/backend:/app" -w /app composer:2.10 install
+name: ruta2
+
+x-api-image: &api-image
+  build:
+    context: ..
+    dockerfile: docker/php/Dockerfile
+  image: ruta2-api:local
+  env_file:
+    # Variables propias (cuotas, correo, admin…). Opcional en local.
+    - path: ${API_ENV_FILE:-../backend/.env}
+      required: false
+  environment: &api-env
+    APP_ENV: ${APP_ENV:-local}
+    APP_DEBUG: "false"
+    # Laravel exige una clave aunque hoy no cifra nada (sin sesiones ni cookies).
+    # Sin valor por defecto: una clave pública en producción no debe colarse en silencio.
+    APP_KEY: "${APP_KEY:?falta APP_KEY (en local --env-file docker/local.env; en producción php artisan key:generate --show)}"
+    APP_URL: ${APP_URL:-http://localhost:8081}
+    LOG_CHANNEL: stderr
+    # Fuera de backend/: en local está montado desde el host y www-data no puede escribir.
+    VIEW_COMPILED_PATH: /tmp/views
+    LOG_LEVEL: ${LOG_LEVEL:-warning}
+    DB_CONNECTION: pgsql
+    # Siempre la base de este stack; nunca la de la raíz ni Neon.
+    DATABASE_URL: postgresql://ruta:ruta@db:5432/ruta
+    SESSION_DRIVER: array
+    CACHE_STORE: array
+    QUEUE_CONNECTION: sync
+    FPM_MAX_CHILDREN: ${FPM_MAX_CHILDREN:-16}
+    MAIL_PROVIDER: ${MAIL_PROVIDER:-smtp}
+    SMTP_HOST: ${SMTP_HOST:-mailpit}
+    SMTP_PORT: ${SMTP_PORT:-1025}
+  volumes:
+    - ../backend:/var/www/html
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: docker/nginx/Dockerfile
+    image: ruta2-web:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8081}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    <<: *api-image
+    restart: unless-stopped
+
+  migrate:
+    <<: *api-image
+    profiles: ["local", "contract"]
+    command: ["php", "artisan", "migrate", "--force"]
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ruta
+      POSTGRES_PASSWORD: ruta
+      POSTGRES_DB: ruta
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db/init-test-db.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
+    ports:
+      - "127.0.0.1:${DB_PORT:-5435}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ruta -d ruta"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    ports:
+      - "127.0.0.1:${MAILPIT_PORT:-8027}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  fake-deepseek:
+    image: node:22-alpine
+    profiles: ["contract"]
+    working_dir: /fake
+    command: ["node", "--experimental-strip-types", "--no-warnings", "fake-deepseek.mts"]
+    volumes:
+      - ../tests/contract/fake-deepseek.mts:/fake/fake-deepseek.mts:ro
+    ports:
+      - "127.0.0.1:${FAKE_DEEPSEEK_PORT:-8791}:8790"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8790/healthz || exit 1"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  db-data:

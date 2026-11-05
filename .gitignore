@@ -13,3 +13,6 @@ dist/
 /data/
 backups/*.gz
 .despliegue.txt
+
+# Clave local de docker/compose.yml (plantilla: docker/local.env.example)
+/docker/local.env

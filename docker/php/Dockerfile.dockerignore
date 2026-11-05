@@ -1,0 +1,12 @@
+# La imagen de la API solo necesita backend/ y su configuración de PHP.
+*
+!backend
+!docker/php
+backend/vendor
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/storage/logs/*.log
+backend/storage/framework/cache/data
+backend/bootstrap/cache/*.php
+backend/.phpunit.cache
