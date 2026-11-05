@@ -1,5 +1,7 @@
 # Rediseño limpio
 
+> **Cambio 2026-11-05 — `specs/landing-y-acceso/`:** se añade una vista nueva fuera del shell, la **landing pública** (explicación, muestra jugable y entrada por correo), con las mismas reglas de tokens, tipografía y una sola acción principal. La maqueta debe incluirla antes de aplicar el rediseño.
+
 ## Overview
 La app funciona, pero cada vista se ha ido maquetando por su cuenta: dos familias tipográficas (sans y serif) compitiendo, sombras y bordes de pesos distintos, el naranja usado a la vez como color de texto, de borde y de relleno, y varias acciones que parecen igual de importantes en la misma pantalla. El resultado se lee cansado y no deja claro qué hacer a continuación.
 

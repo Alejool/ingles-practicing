@@ -1,5 +1,7 @@
 # Harness del alumno
 
+> **Cambio 2026-11-05 — `specs/landing-y-acceso/`:** la app pasa a exigir cuenta (el principio 8 de la constitución está enmendado). Todo estudiante de la app tiene cuenta y perfil. Los criterios que hablan de "sin cuenta" (AC-3, la sección TUT, "Usuarios") quedan reducidos a: sin conexión, con el harness apagado o con clave propia (si se mantiene, AC-22 de esa spec). Se reescriben al planificar el harness, no antes.
+
 ## Overview
 Hoy la IA de la app no sabe nada del estudiante. Cada llamada a `/api/ai/chat` es una petición suelta: el cliente manda un tipo (`writing`, `speaking`, `tutor`, `error`, `reading`, `test`) y unos datos acotados, el servidor compone el prompt y hace una sola llamada a DeepSeek. El progreso de quien tiene cuenta está en el servidor, pero como un único JSON opaco (`progress.data`) que ninguna parte del servidor lee. Resultado: el tutor explica igual a quien falla siempre el mismo tiempo verbal que a quien lo domina, nadie detecta errores que se repiten semana tras semana, el plan de 24 semanas no se adapta a nada, y los ejercicios generados (lecturas) no apuntan a lo que el estudiante necesita.
 

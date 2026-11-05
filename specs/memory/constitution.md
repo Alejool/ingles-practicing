@@ -27,8 +27,8 @@ The shape and keys of what is already stored (localStorage blob, IndexedDB queue
 ### 7. Content is not rewritten
 Existing study content in `src/data/` is not edited by feature work. New content is added alongside it.
 
-### 8. Offline and account-free first
-Every study feature works without a network and without an account. Server features are additions, never requirements.
+### 8. Public landing, account for the app, offline after login
+The public landing (and its sample activities) works without an account and saves nothing. The app itself requires an account. Once a student has logged in on a device, every study feature works there without a network; what was done offline syncs when the network returns. Only what cannot work offline (AI, email) needs the server. (Amended 2026-11-05 by `specs/landing-y-acceso/`, approved by the owner; it was "Offline and account-free first".)
 
 ### 9. Accessible by construction
 New UI ships with its announcements (`aria-live`), focus handling, labels and keyboard operation. WCAG 2.1 AA is the floor.
