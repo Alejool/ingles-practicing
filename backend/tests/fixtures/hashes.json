@@ -1,0 +1,118 @@
+{
+  "sha256Hex": [
+    {
+      "text": "",
+      "hex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "text": "hola",
+      "hex": "b221d9dbb083a7f33428d7c2a3c3198ae925614d70210e28716ccaa7cd4ddb79"
+    },
+    {
+      "text": "ñandú á/é",
+      "hex": "ec0d93dcf34560e346053e089f8f4d3ca7a2b50bb8d8b89d92505a64f8efa16c"
+    },
+    {
+      "text": "😀 emoji",
+      "hex": "c5db20e64d86b693d8e312b379cfdd211311f63f3743831e6f4139344b39d762"
+    },
+    {
+      "text": "203.0.113.7|ruta-b1b2",
+      "hex": "faec07010889df2460245644d6433e1a120f175e7d0a80023f3266771938f143"
+    }
+  ],
+  "hashIp": [
+    {
+      "ip": "203.0.113.7",
+      "pepper": "",
+      "hex": "faec07010889df2460245644d6433e1a120f175e7d0a80023f3266771938f143"
+    },
+    {
+      "ip": "::1",
+      "pepper": "",
+      "hex": "66ff9cf39769f0cd349d80d9398c8801f7e5689deef23bb4a9fabd64f47c1d0b"
+    },
+    {
+      "ip": "0.0.0.0",
+      "pepper": "",
+      "hex": "b9fd34c2ffefb4bd3a0da5d04ece38177189c03043c4e5ec333b2a93b4938b75"
+    },
+    {
+      "ip": "2001:db8::1",
+      "pepper": "",
+      "hex": "22586b0fe8d14a049db2581f8f3de85eebc7ad0a83176ef8927cebf8d0dad4b9"
+    },
+    {
+      "ip": "203.0.113.7",
+      "pepper": "contract-pepper",
+      "hex": "6875784421bd25e3d339be91a48d649c7c9c6d2f03ada4e955f3047dad553f86"
+    },
+    {
+      "ip": "::1",
+      "pepper": "contract-pepper",
+      "hex": "41d0b81210a4c87b4d1b79cbb8ccc81767d9e76d5fb91c1667aa82a32757211e"
+    },
+    {
+      "ip": "0.0.0.0",
+      "pepper": "contract-pepper",
+      "hex": "5d4041b50f0a8e56fc393a1761319878edb346d843661d23732a0acf69e4d5b8"
+    },
+    {
+      "ip": "2001:db8::1",
+      "pepper": "contract-pepper",
+      "hex": "233796b6673069d05606765d215bd3994fbd30c8826a7be45ad199e98ca5a9cc"
+    },
+    {
+      "ip": "203.0.113.7",
+      "pepper": "pimienta con ñ",
+      "hex": "70b0e7bac3429bc2586ccd40eda7920559d7c3421ba5bcd04287198f15a24d90"
+    },
+    {
+      "ip": "::1",
+      "pepper": "pimienta con ñ",
+      "hex": "ab21b9200bf4c08c2119232dd00c3969c42360143d403c17621738cedf1e94bc"
+    },
+    {
+      "ip": "0.0.0.0",
+      "pepper": "pimienta con ñ",
+      "hex": "123e4a37883fde590deeb09212a9c08dc7ae94557ccd0e21f142b6807a8b237b"
+    },
+    {
+      "ip": "2001:db8::1",
+      "pepper": "pimienta con ñ",
+      "hex": "f00e4cdfc26dfced307ba74fe2e81347a9a59dd7410af97aa14559b6ff09ac86"
+    }
+  ],
+  "anonPulse": [
+    {
+      "device": "dev-12345678",
+      "pepper": "",
+      "hex": "9aa918ba3b73459426288f02af48a21baca81cf0ed172148f4837784c887f19d"
+    },
+    {
+      "device": "AbC_xyz-0987654321",
+      "pepper": "",
+      "hex": "73ec5014989f5875f45226a76bc6d35ec06316bf23fe3118687b2cf6bf0b548c"
+    },
+    {
+      "device": "dev-12345678",
+      "pepper": "contract-pepper",
+      "hex": "da6afca2562c2196a00a9ba53508e7d520ca71c6aea759da8970d6a1f14dea5e"
+    },
+    {
+      "device": "AbC_xyz-0987654321",
+      "pepper": "contract-pepper",
+      "hex": "81523ff665827f6a601742777cbfbf7eb7b59dced44f9cd9ef431e1136c9201a"
+    },
+    {
+      "device": "dev-12345678",
+      "pepper": "pimienta con ñ",
+      "hex": "f45508169f227433441600fc5c6480a89fedc3bb2c25caa1b58b249f4884102c"
+    },
+    {
+      "device": "AbC_xyz-0987654321",
+      "pepper": "pimienta con ñ",
+      "hex": "14aa85130fc117b2181958b435393a95a69e0f6b0fe6a2c06b080c36ad69fcea"
+    }
+  ]
+}
