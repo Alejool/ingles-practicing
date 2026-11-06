@@ -50,6 +50,8 @@ x-api-image: &api-image
     SMTP_PORT: ${SMTP_PORT:-1025}
   volumes:
     - ../backend:/var/www/html
+    # db/schema.sql (base de los tests de paridad y de admin op=schema) hasta que la fase 6 lo mueva a backend/.
+    - ../db:/var/www/db:ro
   depends_on:
     db:
       condition: service_healthy
