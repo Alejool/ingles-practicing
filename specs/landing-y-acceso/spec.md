@@ -54,7 +54,7 @@ Decidido por el dueño el 2026-11-05 (landing + acceso, subir progreso local, es
 
 ### Progreso local → cuenta
 - [ ] AC-12: Si al entrar hay progreso local en el navegador (de antes de esta feature) y la cuenta no tiene progreso, el progreso local se sube completo a la cuenta. Después, la app muestra exactamente lo mismo que antes de entrar: semana y día, gramática, tarjetas, palabras propias, cuaderno de errores, simulacros, textos. Test con un estado local real.
-- [ ] AC-13: Si hay progreso local **y** la cuenta ya tiene progreso, no se sobrescribe ninguno en silencio. [NEEDS CLARIFICATION: ¿se pregunta al estudiante cuál conservar, o se fusionan (unión de tarjetas, errores y marcas; el más avanzado en plan)?]
+- [ ] AC-13: Si hay progreso local **y** la cuenta ya tiene progreso, no se sobrescribe ninguno en silencio. Se **fusionan** sin pérdida: unión de tarjetas, errores, marcas y textos; en el plan, el punto más avanzado; en un mismo ítem con dos valores, el más reciente. Test con dos estados reales. (Decidido 2026-11-05.)
 - [ ] AC-14: El progreso local no se borra del navegador al subirlo (principio 6); queda como copia hasta que el servidor confirma la versión.
 - [ ] AC-15: La subida no cambia la forma ni las claves de lo guardado (principio 6). Test: el blob subido es byte a byte el local, más campos nuevos opcionales si los hay.
 
@@ -63,7 +63,7 @@ Decidido por el dueño el 2026-11-05 (landing + acceso, subir progreso local, es
 - [ ] AC-17: Lo hecho sin conexión se guarda en local y se sincroniza al volver la red, sin acción del estudiante.
 - [ ] AC-18: Si la sesión caduca estando sin conexión, el estudiante sigue estudiando; al volver la red se le pide entrar otra vez y entonces se sincroniza lo pendiente. Nada se pierde.
 - [ ] AC-19: Dos dispositivos con la misma cuenta: un cambio hecho en uno no borra uno hecho en el otro (el conflicto de versión `version_conflict` se resuelve sin pérdida). Test.
-- [ ] AC-20: Salir de la cuenta en un dispositivo vuelve a la landing. [NEEDS CLARIFICATION: ¿al salir se borra el progreso local de ese dispositivo (privacidad en ordenadores compartidos) o se conserva hasta que entre otra cuenta?]
+- [ ] AC-20: Salir de la cuenta en un dispositivo vuelve a la landing. El progreso local se **conserva** hasta que entre otra cuenta en ese dispositivo; si entra otra, el de la anterior queda guardado aparte y no se mezcla. (Decidido 2026-11-05.)
 
 ### Bienvenida y seguimiento
 - [ ] AC-24: El seguimiento del estudiante empieza en su primera entrada. Su punto de partida es el diagnóstico (de la landing o del onboarding) más el progreso local subido, si lo había.
@@ -74,7 +74,7 @@ Decidido por el dueño el 2026-11-05 (landing + acceso, subir progreso local, es
 
 ### IA
 - [ ] AC-21: Todos los endpoints de IA exigen sesión. Las peticiones sin sesión reciben 401 sin llamar al modelo. El cupo anónimo deja de usarse.
-- [ ] AC-22: [NEEDS CLARIFICATION: la opción de **clave propia** de DeepSeek en Ajustes, ¿se mantiene para estudiantes con cuenta o se quita?]
+- [ ] AC-22: Se **quita** la opción de clave propia de DeepSeek: toda la IA pasa por el servidor y su cupo. (Decidido 2026-11-05.)
 
 ### Accesibilidad y diseño
 - [ ] AC-23: La landing cumple las reglas del rediseño (`specs/rediseno-limpio/`): una acción principal naranja, tokens de color, Instrument Sans, claro y oscuro, foco visible, navegable con teclado, contraste AA.
@@ -96,9 +96,7 @@ Contenido real, sin guardar, sin IA:
 - Marketing: blog, precios, testimonios, SEO más allá de título y descripción.
 
 ## Open Questions
-- [NEEDS CLARIFICATION: AC-13 — progreso local y de cuenta a la vez: preguntar o fusionar.]
-- [NEEDS CLARIFICATION: AC-20 — al salir, borrar o conservar el progreso local.]
-- [NEEDS CLARIFICATION: AC-22 — clave propia de DeepSeek: mantener o quitar.]
+- Ninguna abierta (AC-13, AC-20 y AC-22 decididos el 2026-11-05).
 
 ## Dependencies
 - `specs/backend-separado/`: los endpoints de cuenta y progreso deben existir en Laravel (fase 4) antes de exigir cuenta en producción; mientras, la API Node.
