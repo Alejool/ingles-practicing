@@ -17,6 +17,7 @@
     "docker:stop": "bash start.sh stop",
     "start:local": "node -e \"process.env.DB_DRIVER='pglite';import('./server/index.mts')\"",
     "test": "node --experimental-strip-types --no-warnings --test \"tests/*.test.mts\"",
+    "test:ui": "playwright test",
     "test:plan": "node --experimental-strip-types --no-warnings scripts/validar-plan.mts",
     "plan:export": "node --experimental-strip-types --no-warnings scripts/exportar-plan.mts",
     "test:contract": "node --experimental-strip-types --no-warnings --test \"tests/contract/*.test.mts\"",
@@ -26,16 +27,17 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@netlify/functions": "^6.0.0",
+    "@playwright/test": "1.64.1",
     "@types/node": "^26.4.1",
     "@types/pg": "^8.23.1",
     "astro": "^7.3.1",
     "typescript": "^6.0.3"
   },
   "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@neondatabase/serverless": "^1.1.0",
     "nodemailer": "^9.1.1",
-    "pg": "^8.23.0",
-    "@electric-sql/pglite": "^0.5.8"
+    "pg": "^8.23.0"
   },
   "engines": {
     "node": ">=22"

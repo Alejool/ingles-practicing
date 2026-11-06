@@ -16,3 +16,7 @@ backups/*.gz
 
 # Clave local de docker/compose.yml (plantilla: docker/local.env.example)
 /docker/local.env
+
+# Salida de la suite de interfaz (Playwright)
+/test-results/
+/playwright-report/
