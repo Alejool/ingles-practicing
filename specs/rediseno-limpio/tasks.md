@@ -14,26 +14,26 @@ Reglas:
 
 ## Fase 0 — Requisitos previos
 
-- [ ] 0.1 Línea base: `npm test`, `npm run test:plan`, `npm run check`, `npm run build` en verde; anotar números (tests, avisos de `check`, tamaño del esqueleto que imprime `precache`) en `progress.md`.
+- [x] 0.1 Línea base: `npm test`, `npm run test:plan`, `npm run check`, `npm run build` en verde; anotar números (tests, avisos de `check`, tamaño del esqueleto que imprime `precache`) en `progress.md`.
   - Archivos: `specs/rediseno-limpio/progress.md`.
-- [ ] 0.2 **[DEC]** Aprobación de la maqueta (`docs/diseno/maqueta-rediseno.html` + `docs/diseno/capturas/`, terracota #C2703F) y respuesta a las dos preguntas abiertas del spec (uso del terracota; Mi seguimiento en "Atajos"). Sin ella no empieza la fase 2.
-- [ ] 0.3 **[AUT]** OK del dueño a la dependencia `@playwright/test` (versión exacta) con navegador Edge local (plan R-1, R-2). Sin él no empieza la fase 1.
+- [x] 0.2 **[DEC]** Aprobación de la maqueta (`docs/diseno/maqueta-rediseno.html` + `docs/diseno/capturas/`, terracota #C2703F) y respuesta a las dos preguntas abiertas del spec (uso del terracota; Mi seguimiento en "Atajos"). Sin ella no empieza la fase 2.
+- [x] 0.3 **[AUT]** OK del dueño a la dependencia `@playwright/test` (versión exacta) con navegador Edge local (plan R-1, R-2). Sin él no empieza la fase 1.
 - [ ] 0.4 Dependencia: `selector-de-ruta` cerrado (toca `dom.ts`, `Base.astro`, `global.css`, `dialogo.ts`). Sin él no empieza la fase 2; la fase 1 sí.
-- [ ] 0.5 [C] Punto de control: línea base, decisiones y dependencias anotadas en `progress.md`.
+- [x] 0.5 [C] Punto de control: línea base, decisiones y dependencias anotadas en `progress.md`.
 
 ## Fase 1 — Suite de interfaz (la que comparten todas las features)
 
-- [ ] 1.1 Instalar `@playwright/test` con versión exacta (≥ 2 semanas publicada) en `devDependencies`; script `"test:ui": "playwright test"`; `playwright.config.ts` con `webServer` (`npm run build:fast` + `astro preview --port 4329`), `channel: "msedge"` en local, proyectos escritorio 1440×900, móvil 375×812 (`isMobile`, `hasTouch`) y móvil 320×640; `testDir: tests/ui`. Anotar versión y motivo en `progress.md`.
+- [x] 1.1 Instalar `@playwright/test` con versión exacta (≥ 2 semanas publicada) en `devDependencies`; script `"test:ui": "playwright test"`; `playwright.config.ts` con `webServer` (`npm run build:fast` + `astro preview --port 4329`), `channel: "msedge"` en local, proyectos escritorio 1440×900, móvil 375×812 (`isMobile`, `hasTouch`) y móvil 320×640; `testDir: tests/ui`. Anotar versión y motivo en `progress.md`.
   - Archivos: `package.json`, `package-lock.json`, `playwright.config.ts`.
-- [ ] 1.2 Test (falla primero): `tests/contraste.test.mts` — `ratio("#000000", "#C2703F")` = 5,68 ± 0,01; `ratio("#FFFFFF","#FFFFFF")` = 1; acepta `rgb()`/`rgba()` opacos y rechaza los translúcidos con error explícito.
+- [x] 1.2 Test (falla primero): `tests/contraste.test.mts` — `ratio("#000000", "#C2703F")` = 5,68 ± 0,01; `ratio("#FFFFFF","#FFFFFF")` = 1; acepta `rgb()`/`rgba()` opacos y rechaza los translúcidos con error explícito.
   - Archivos: `tests/contraste.test.mts`.
-- [ ] 1.3 Implementar `tests/ui/util/contraste.ts` (luminancia WCAG 2.x pura, exportable a `node:test`) + `contrasteDeNodo(page, locator)` que resuelve el fondo opaco efectivo.
+- [x] 1.3 Implementar `tests/ui/util/contraste.ts` (luminancia WCAG 2.x pura, exportable a `node:test`) + `contrasteDeNodo(page, locator)` que resuelve el fondo opaco efectivo.
   - Archivos: `tests/ui/util/contraste.ts`.
-- [ ] 1.4 [P] Implementar utilidades de página con su propio spec de prueba (`tests/ui/util.spec.ts` sobre una página `data:` mínima: una con desbordamiento y otra sin él; un botón de 40 px y otro de 44 px; un `h1[tabindex=-1]`): `sinScrollHorizontal`, `dianas44`, `focoEnH1`, `recorridoTab`.
+- [x] 1.4 [P] Implementar utilidades de página con su propio spec de prueba (`tests/ui/util.spec.ts` sobre una página `data:` mínima: una con desbordamiento y otra sin él; un botón de 40 px y otro de 44 px; un `h1[tabindex=-1]`): `sinScrollHorizontal`, `dianas44`, `focoEnH1`, `recorridoTab`.
   - Archivos: `tests/ui/util/layout.ts`, `tests/ui/util/foco.ts`, `tests/ui/util.spec.ts`.
-- [ ] 1.5 [P] `tests/ui/fake-api.ts` (rutas `/api/**`: sesión con cuentas apagadas, cuota, progreso 404, todo lo demás 404 con registro) y `tests/ui/fixtures.ts` (test extendido: tema claro/oscuro por `colorScheme`, carga opcional de `tests/fixtures/progreso-local-real.json` en `localStorage` antes de navegar, fallo si hay errores de consola o peticiones no simuladas).
+- [x] 1.5 [P] `tests/ui/fake-api.ts` (rutas `/api/**`: sesión con cuentas apagadas, cuota, progreso 404, todo lo demás 404 con registro) y `tests/ui/fixtures.ts` (test extendido: tema claro/oscuro por `colorScheme`, carga opcional de `tests/fixtures/progreso-local-real.json` en `localStorage` antes de navegar, fallo si hay errores de consola o peticiones no simuladas).
   - Archivos: `tests/ui/fake-api.ts`, `tests/ui/fixtures.ts`.
-- [ ] 1.6 Fixture real: reutilizar `tests/fixtures/progreso-local-real.json` si `ruta-b2-c1` o `landing-y-acceso` ya lo dejaron; si no, pedir al dueño un "Exportar copia" real y anonimizarlo (mismas reglas que `landing-y-acceso` 0.5).
+- [~] 1.6 Fixture real: reutilizar `tests/fixtures/progreso-local-real.json` si `ruta-b2-c1` o `landing-y-acceso` ya lo dejaron; si no, pedir al dueño un "Exportar copia" real y anonimizarlo (mismas reglas que `landing-y-acceso` 0.5).
   - Archivos: `tests/fixtures/progreso-local-real.json`.
 - [ ] 1.7 Caracterización (verde desde el principio): `tests/ui/caracterizacion.spec.ts` — en la app **actual**, con y sin el progreso real, abrir cada una de las 18 vistas por su ítem del menú: existe su `h1`, no hay errores de consola, y las cifras del Panel (días hechos, tarjetas para hoy, dominio por destreza) coinciden con las del fixture. Esta prueba no se edita durante el rediseño salvo para cambiar selectores, y cada cambio de selector se anota.
   - Archivos: `tests/ui/caracterizacion.spec.ts`.

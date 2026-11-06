@@ -190,8 +190,8 @@ Notas:
 ## Open Questions
 - Resueltas el 2026-11-05 por el dueño: el esqueleto se aplica a todas las vistas; Ajustes y Cuenta en el pie del lateral; mismo acento en oscuro; Instrument Sans alojada en la app (`public/fonts/`, sin Google Fonts).
 - Resuelta el 2026-11-06: el acento pasa a terracota #C2703F.
-- [NEEDS CLARIFICATION: "Mi seguimiento" aparece en la maqueta como vista propia en "Atajos" (recomendación de `specs/landing-y-acceso/plan.md`, decisión 4). ¿Se aprueba ahí, o va como sección de Cuenta?]
-- [NEEDS CLARIFICATION: el mensaje del dueño del 2026-11-06 nombra como usos del acento "botón principal, día de hoy en el plan y barras de progreso". La maqueta y AC-3 lo dejan solo en el botón principal (día actual y barras siguen en petróleo). ¿Se mantiene así o se pasa el día actual y las barras a terracota? Si se cambia, AC-3 se reescribe y se miden las parejas de la nota de arriba.]
+- Resuelta el 2026-11-06 (maqueta aprobada, `.agentflow/DECISIONS.md`): "Mi seguimiento" va como vista propia en "Atajos".
+- Resuelta el 2026-11-06: el terracota queda solo en el botón principal; día actual y barras siguen en petróleo. AC-3 no cambia.
 
 ## Dependencies
 - Paleta v2 ya presente en `src/styles/global.css` (rama `redesign/ui`).
