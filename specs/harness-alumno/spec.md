@@ -89,6 +89,15 @@ Todo es una **adición** para quien tiene cuenta y la IA del servidor activa. Si
 - [ ] AC-37: Los ejercicios generados son del estudiante: no entran en la biblioteca compartida de lecturas (`shared_readings`) ni los ve nadie más.
 - [ ] AC-38: `buscar_contenido` solo busca en el contenido de estudio de la ruta activa del estudiante (gramática, vocabulario, lecturas, escucha del plan), nunca en la web, en datos de otros usuarios ni en la base fuera de esa ruta.
 
+### (e) Memoria del alumno y búsqueda semántica (RAG)
+Pedido por el dueño el 2026-11-05: que el agente recuerde lo que el estudiante hizo y encuentre rápido lo relevante, con vectores en Postgres. El objetivo es contexto más corto y más pertinente en cada llamada (menos tokens = respuesta más rápida y más barata), no sustituir al perfil determinista: el perfil decide el foco y la búsqueda trae los ejemplos.
+- [ ] AC-68: `buscar_contenido` encuentra contenido de la ruta por significado, no solo por palabra exacta: una consulta como "me lío con el pasado y el present perfect" devuelve la unidad de gramática, ítems de Use of English y lecturas que lo trabajan. Test con un conjunto fijo de consultas y resultados esperados.
+- [ ] AC-69: El agente puede recuperar la memoria del propio estudiante por parecido: errores anteriores y recortes de sus textos (AC-41) similares a lo que está corrigiendo ahora, para decir "esto ya te pasó en la semana 3". Nunca recupera nada de otro estudiante. Test de aislamiento con dos usuarios.
+- [ ] AC-70: La búsqueda (consulta + recuperación) responde en menos de 150 ms en el percentil 95 con el contenido de las tres rutas y 10 000 recuerdos por estudiante, medido en el Docker local. No añade llamadas al modelo de chat.
+- [ ] AC-71: El contenido de estudio se indexa una vez por versión del contenido (no en cada petición). La memoria del estudiante se indexa al guardar el evento, sin hacerle esperar: si el indexado falla, el evento se guarda igual y se reintenta.
+- [ ] AC-72: Si el índice no está disponible, la búsqueda cae a texto completo de Postgres y el harness sigue funcionando (peor recuperación, sin error para el estudiante). Test.
+- [ ] AC-73: Al modelo de chat solo llegan los N mejores resultados (N fijado en el plan, por defecto 5), recortados al presupuesto de contexto (AC-9).
+
 ### Datos y privacidad
 - [ ] AC-39: El estudiante puede descargar en JSON todo lo que el harness guarda de él: eventos, perfil derivado, observaciones, propuestas y decisiones, ejercicios generados y el resumen de sus ejecuciones (sin prompts).
 - [ ] AC-40: Las tablas nuevas referencian `users(id)` con borrado en cascada, como `progress` y `sessions`: si el administrador borra una cuenta por la vía existente, sus datos del harness desaparecen con ella. No hay ningún otro borrado.
@@ -107,7 +116,7 @@ Todo es una **adición** para quien tiene cuenta y la IA del servidor activa. Si
 - Cambiar la estructura de 24 semanas, quitar contenido o reescribir `src/data/`.
 - Acceso anónimo, o el harness con la clave propia del estudiante en el navegador.
 - UPDATE o DELETE de filas existentes, o cambios en tablas existentes. Las tablas nuevas son de solo inserción.
-- Un proveedor de IA nuevo o de pago, o un modelo local.
+- Un proveedor de IA de pago nuevo para chat. (Los vectores de (e) necesitan un modelo de embeddings: ver Open Questions.)
 - Rediseño de la UI. Solo puntos de entrada mínimos con los componentes que ya existen.
 - Cambiar los límites de cuota existentes, los precios o el valor del crédito.
 - Ejecuciones programadas en segundo plano (cron) o notificaciones push: el harness solo corre cuando el estudiante lo pide.
@@ -146,6 +155,7 @@ El harness debe funcionar con las tres rutas (`a2b1`, `b1b2`, `b2c1`) y con una 
 Su "seguimiento" y el perfil del harness miden cosas parecidas. El perfil del servidor no sustituye al seguimiento local (que funciona sin cuenta); al planificar, el seguimiento puede ser una de las fuentes de eventos.
 
 ## Open Questions
+- [NEEDS CLARIFICATION: origen de los embeddings para (e). DeepSeek no ofrece modelo de embeddings. Opciones: (1) modelo local pequeño y multilingüe en un contenedor del propio Docker (gratis, sin enviar datos fuera, ~0,5 GB de RAM); (2) proveedor de pago de embeddings (otra clave y otro tercero que recibe textos del estudiante); (3) sin vectores, solo texto completo de Postgres (más simple, peor por significado). Recomendado: (1) con pgvector.]
 - [NEEDS CLARIFICATION: presupuesto de 3 créditos por ejecución. Con el crédito actual (500 millonésimas) son 0,0015 USD × 3. Un resumen de 2,5k tokens enviado en cada uno de hasta 6 pasos, más las salidas, puede no caber en 3 créditos con los precios de DeepSeek: el harness pararía a menudo por `presupuesto` antes de terminar. ¿Se acepta medirlo en el plan con un modelo de costes y, si no cabe, subir el tope por ejecución o reducir el resumen? Hoy una sola pregunta de tutor ya reserva 3.]
 - [NEEDS CLARIFICATION: ¿qué dispara una ejecución? Se asume que solo el estudiante: al pedir una explicación (b), al pulsar "revisar mi plan" (c) y al pedir "ejercicios para mis puntos débiles" (d). Alternativa: una ejecución automática al cerrar la semana, que gasta créditos sin pedirlo.]
 - [NEEDS CLARIFICATION: tipos permitidos de ajuste del plan. Se propone una lista cerrada solo aditiva: añadir un bloque de refuerzo a un día de los próximos 7, repetir una unidad de gramática, mover un repaso dentro de la misma semana. ¿Alguno más, o alguno de estos sobra?]

@@ -40,9 +40,10 @@ Decidido por el dueño el 2026-11-05 (landing + acceso, subir progreso local, es
 - [ ] AC-1: Quien abre la app sin sesión ve la landing, no la app. Ninguna vista de estudio (Panel, Plan, módulos, Tutor, Ajustes, Cuenta) es accesible sin sesión; al intentarlo por URL directa vuelve a la landing.
 - [ ] AC-2: La landing explica en una pantalla qué es la ruta (niveles A2→B1 y B1→B2, plan de 24 semanas, qué se practica) con texto real y una única acción principal: "Entrar con tu correo".
 - [ ] AC-3: La landing ofrece una muestra jugable sin cuenta: al menos una actividad de cada tipo listado en "Muestra" (abajo), con contenido real de `src/data/` y corrección inmediata.
-- [ ] AC-4: Nada de lo hecho en la muestra se guarda: no escribe en `localStorage`, IndexedDB ni servidor. Al recargar, la muestra empieza de cero. Test.
+- [ ] AC-4: Nada de lo hecho en la muestra se guarda en el navegador ni en el servidor, con una sola excepción: el resultado del diagnóstico (AC-6b). Al recargar, la muestra empieza de cero. Test.
 - [ ] AC-5: La muestra no llama a la IA ni a ningún endpoint con coste. Test (cero peticiones a `/api/ai/*` desde la landing).
-- [ ] AC-6: Al terminar cada actividad de muestra se ofrece entrar con el correo, sin bloquear seguir probando.
+- [ ] AC-6: Al terminar cada actividad de muestra se ofrece entrar con el correo, sin bloquear seguir probando. El mensaje dice qué gana al entrar, con su resultado concreto: guardar el progreso, plan de 24 semanas, seguimiento personal y agente que adapta el estudio a sus errores.
+- [ ] AC-6b: El diagnóstico gratuito es completo (las diez preguntas de su ruta) y da un resultado de nivel por destreza. Si el visitante entra con su correo en esa misma pestaña, el resultado pasa a su cuenta como punto de partida del seguimiento y no tiene que repetirlo. Si cierra la pestaña, el resultado se pierde.
 - [ ] AC-7: La landing funciona sin conexión una vez cargada (está en el precache de la PWA).
 
 ### Entrada
@@ -64,6 +65,13 @@ Decidido por el dueño el 2026-11-05 (landing + acceso, subir progreso local, es
 - [ ] AC-19: Dos dispositivos con la misma cuenta: un cambio hecho en uno no borra uno hecho en el otro (el conflicto de versión `version_conflict` se resuelve sin pérdida). Test.
 - [ ] AC-20: Salir de la cuenta en un dispositivo vuelve a la landing. [NEEDS CLARIFICATION: ¿al salir se borra el progreso local de ese dispositivo (privacidad en ordenadores compartidos) o se conserva hasta que entre otra cuenta?]
 
+### Bienvenida y seguimiento
+- [ ] AC-24: El seguimiento del estudiante empieza en su primera entrada. Su punto de partida es el diagnóstico (de la landing o del onboarding) más el progreso local subido, si lo había.
+- [ ] AC-25: Tras el diagnóstico de la primera entrada, el agente da la bienvenida con un mensaje propio de ese estudiante: nivel estimado por destreza, los tres puntos en los que empezar y qué toca hoy en el plan. No es un texto fijo: dos estudiantes con diagnósticos distintos reciben mensajes distintos. Si la IA no está disponible, se muestra la misma información sin redactar por el modelo (sale del perfil).
+- [ ] AC-26: Existe una vista **Mi seguimiento** donde el estudiante ve lo que la app sabe de él: nivel por destreza y su evolución semana a semana, puntos fuertes, puntos débiles, errores que se repiten y propuestas del agente pendientes. Cada dato dice de dónde sale (qué ejercicios).
+- [ ] AC-27: Cada ejercicio, respuesta y sesión de estudio con cuenta alimenta el seguimiento (también lo hecho sin conexión, al sincronizar). El estudiante ve el efecto en Mi seguimiento en la siguiente visita a la vista, sin acción manual.
+- [ ] AC-28: El estudiante puede descargar su seguimiento completo (lo define `specs/harness-alumno/`, AC-39).
+
 ### IA
 - [ ] AC-21: Todos los endpoints de IA exigen sesión. Las peticiones sin sesión reciben 401 sin llamar al modelo. El cupo anónimo deja de usarse.
 - [ ] AC-22: [NEEDS CLARIFICATION: la opción de **clave propia** de DeepSeek en Ajustes, ¿se mantiene para estudiantes con cuenta o se quita?]
@@ -73,7 +81,7 @@ Decidido por el dueño el 2026-11-05 (landing + acceso, subir progreso local, es
 
 ## Muestra (landing)
 Contenido real, sin guardar, sin IA:
-- Cinco preguntas del diagnóstico de la ruta elegida en la propia landing, con resultado orientativo.
+- El diagnóstico completo (diez preguntas) de la ruta elegida en la propia landing, con resultado por destreza (AC-6b).
 - Una tanda corta de tarjetas de vocabulario (repaso tipo "lo sé / no lo sé").
 - Un audio de escucha con el protocolo de tres pases (voz del navegador).
 - Un ejercicio de Use of English.
@@ -81,7 +89,7 @@ Contenido real, sin guardar, sin IA:
 ## Non-Goals
 - Planes de pago, suscripciones, pruebas gratuitas por tiempo o límites distintos según plan.
 - Contraseñas, inicio de sesión con Google/Apple u otros proveedores.
-- Guardar la muestra o "continuar la muestra" después de crear la cuenta.
+- Guardar la muestra o "continuar la muestra" después de crear la cuenta (salvo el resultado del diagnóstico, AC-6b).
 - IA en la landing.
 - Cambiar el contenido de estudio (principio 7) o la forma del progreso guardado (principio 6).
 - Panel de administración de usuarios nuevo (el admin actual sigue igual).
