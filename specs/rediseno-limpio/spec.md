@@ -2,12 +2,16 @@
 
 > **Cambio 2026-11-05 — `specs/landing-y-acceso/`:** se añade una vista nueva fuera del shell, la **landing pública** (explicación, muestra jugable y entrada por correo), con las mismas reglas de tokens, tipografía y una sola acción principal. La maqueta debe incluirla antes de aplicar el rediseño.
 
+> **Cambio 2026-11-05 — decisiones del dueño ("Hazlo todo eso", `.agentflow/DECISIONS.md`):** el rediseño se aplica a **todas** las vistas; Ajustes y Cuenta van en el pie del lateral; Instrument Sans se aloja en la propia app; no existe la opción de clave propia de DeepSeek en ninguna vista; antes de aplicar el rediseño tiene que existir una suite de tests de interfaz. La maqueta añade además la vista **Mi seguimiento** (`specs/landing-y-acceso/` AC-26) en el grupo "Atajos".
+>
+> **Cambio 2026-11-06 — acento:** el relleno de la acción principal pasa del naranja #FE7F2D a **terracota apagado #C2703F** (hover y pulsado #B3652F), igual en claro y oscuro, siempre con texto negro. Es el único acento cálido; gris #EAECF0 y petróleo #233D4D no cambian.
+
 ## Overview
 La app funciona, pero cada vista se ha ido maquetando por su cuenta: dos familias tipográficas (sans y serif) compitiendo, sombras y bordes de pesos distintos, el naranja usado a la vez como color de texto, de borde y de relleno, y varias acciones que parecen igual de importantes en la misma pantalla. El resultado se lee cansado y no deja claro qué hacer a continuación.
 
 Este rediseño cambia solo la piel: una estructura de aplicación limpia (lateral claro con la ruta arriba y dos grupos, "Estudiar" y "Atajos"; iconos de línea; cifras sobre gris; filas en tarjetas redondeadas; aire; sin sombras pesadas), una sola familia tipográfica con escala fija y la misma paleta v2 con papeles más estrictos. No cambia qué se estudia, cómo se calcula el progreso ni qué se guarda.
 
-La referencia visual aprobable es `docs/diseno/maqueta-rediseno.html` (Panel, Plan diario, Vocabulario, hoja de estados, diálogo de ruta, cajón móvil, claro y oscuro) con capturas en `docs/diseno/capturas/`.
+La referencia visual aprobable es `docs/diseno/maqueta-rediseno.html` (Panel, Plan diario, Vocabulario, Mi seguimiento, landing pública, hoja de estados, diálogo de ruta, cajón móvil, claro y oscuro) con capturas en `docs/diseno/capturas/`.
 
 ## User Stories
 - Como estudiante, quiero abrir cualquier vista y saber en un vistazo dónde estoy y cuál es lo siguiente que debo hacer.
@@ -18,15 +22,16 @@ La referencia visual aprobable es `docs/diseno/maqueta-rediseno.html` (Panel, Pl
 
 ## Alcance
 - **Shell**: lateral (selector de ruta arriba, grupo "Estudiar", grupo "Atajos", pie con Ajustes, Cuenta y tema), barra superior y cajón en móvil, diálogo de cambio de ruta (el comportamiento lo define `specs/selector-de-ruta/`; aquí solo su piel).
-- **18 vistas**: Panel, Plan diario, Vocabulario, Mis palabras, Gramática, Use of English, Listening & Reading, Writing, Speaking, Tutor, Prueba rápida, Simulacro (grupo Estudiar); Diagnóstico, Qué examen, Cuaderno de errores, Recursos (grupo Atajos); Ajustes, Cuenta (pie).
+- **Vistas del shell**: Panel, Plan diario, Vocabulario, Mis palabras, Gramática, Use of English, Listening & Reading, Writing, Speaking, Tutor, Prueba rápida, Simulacro (grupo Estudiar); Diagnóstico, Qué examen, Cuaderno de errores, Recursos y Mi seguimiento (grupo Atajos; esta última la construye `specs/landing-y-acceso/` fase 8, aquí solo su piel); Ajustes, Cuenta (pie).
+- **Fuera del shell**: la landing pública `/bienvenida/` (la construye `specs/landing-y-acceso/` fase 3, con estas reglas).
 - **Componentes**: botón (principal, secundario, discreto, tamaño pequeño), campo de texto, opción de radio en tarjeta, etiqueta de estado (chip), insignia (badge), tile de cifra, barra (medidor y progreso), fila-tarjeta, paso del plan, tarjeta contenedora, aviso de error (banner), estado vacío, esqueleto de carga, diálogo.
 
 ## Acceptance Criteria
 
 ### Estructura y jerarquía
-- [ ] AC-1: Las 18 vistas usan el mismo esqueleto: encabezado (miga en texto pequeño, `h1` con la escala "display", entradilla opcional), cifras sobre gris si las hay, tarjetas blancas con borde de 1 px y filas.
-- [ ] AC-2: Cada vista tiene como máximo una acción principal con relleno naranja (`--fill`). El resto de acciones son secundarias (borde) o discretas (texto petróleo).
-- [ ] AC-3: El naranja solo aparece como relleno de esa acción principal y siempre con texto negro (`--on-fill`). Nunca como color de texto, borde, icono ni fondo decorativo.
+- [ ] AC-1: Todas las vistas del shell usan el mismo esqueleto: encabezado (miga en texto pequeño, `h1` con la escala "display", entradilla opcional), cifras sobre gris si las hay, tarjetas blancas con borde de 1 px y filas.
+- [ ] AC-2: Cada vista tiene como máximo una acción principal con relleno terracota (`--fill`). El resto de acciones son secundarias (borde) o discretas (texto petróleo).
+- [ ] AC-3: El terracota solo aparece como relleno de esa acción principal y siempre con texto negro (`--on-fill`). Nunca como color de texto, borde, icono ni fondo decorativo.
 - [ ] AC-4: Una sola familia tipográfica (Instrument Sans, con anchura variable) y solo los tamaños de la escala de tokens. La serif desaparece de la app.
 - [ ] AC-5: No hay sombras salvo la del diálogo modal (`--shadow-dialog`). Las tarjetas se separan por borde de 1 px y espacio.
 - [ ] AC-6: Iconos de línea de un mismo set (trazo 1,6 px, 24×24 de caja, 18 px de tamaño normal y 16 px pequeño), nunca emojis como icono.
@@ -54,7 +59,7 @@ La referencia visual aprobable es `docs/diseno/maqueta-rediseno.html` (Panel, Pl
 - [ ] AC-12: Los mensajes de error y los avisos van en texto dentro de la app, nunca con `alert()`.
 
 ### Móvil (375 px)
-- [ ] AC-13: A 375 px de ancho ninguna de las 18 vistas, el cajón ni el diálogo producen scroll horizontal (`scrollWidth` igual a `clientWidth`), en claro y oscuro. Además se comprueba a 320 px.
+- [ ] AC-13: A 375 px de ancho ninguna vista (las del shell y la landing), el cajón ni el diálogo producen scroll horizontal (`scrollWidth` igual a `clientWidth`), en claro y oscuro. Además se comprueba a 320 px.
 - [ ] AC-14: Por debajo de 960 px el lateral pasa a cajón: barra superior de una línea con menú, nombre de la vista y ruta activa; no hay franja propia para la ruta.
 - [ ] AC-15: Con el cajón abierto, el contenido y la barra superior tienen `inert`; el foco entra en el ítem actual, Escape o tocar el velo lo cierran y el foco vuelve al botón de menú. Si la ventana pasa a escritorio con el cajón abierto, se cierra y se quita `inert`.
 - [ ] AC-16: Todas las dianas táctiles miden al menos 44×44 px; los campos usan 16 px de cuerpo para que iOS no amplíe.
@@ -74,7 +79,7 @@ La referencia visual aprobable es `docs/diseno/maqueta-rediseno.html` (Panel, Pl
 ## Non-Goals
 - Cambiar la paleta v2 o añadir colores nuevos de marca.
 - Cambiar el comportamiento del selector de ruta (va en `specs/selector-de-ruta/`).
-- Reordenar, fusionar, añadir o quitar vistas o módulos.
+- Reordenar, fusionar, añadir o quitar vistas o módulos. Excepciones decididas fuera de esta feature: la landing pública y Mi seguimiento las añade `specs/landing-y-acceso/`; aquí solo se maquetan.
 - Reescribir textos de contenido o de `src/data/`; solo se ajustan microtextos de la interfaz (etiquetas de botones, estados vacíos) donde hoy son genéricos.
 - Animaciones decorativas, ilustraciones o mascotas.
 - Cambios de backend, de sincronización o de almacenamiento.
@@ -102,8 +107,8 @@ Los valores exactos viven en la maqueta y pasarán a `src/styles/global.css`. Lo
 | Sobre acento | `--on-accent` | #FFFFFF | #0B1318 | Texto sobre relleno de acento |
 | Acento suave | `--accent-soft` | #DFE6EA | #2F5063 | Fondo de fila u opción elegida |
 | Tinta de acento | `--accent-ink` | #16303F | #EAF3F8 | Texto sobre acento suave |
-| Relleno principal | `--fill` | #FE7F2D | #FE7F2D | Solo la acción principal |
-| Relleno principal hover | `--fill-hover` | #E96C17 | #E96C17 | Hover de la acción principal |
+| Relleno principal | `--fill` | #C2703F | #C2703F | Solo la acción principal (terracota) |
+| Relleno principal hover | `--fill-hover` | #B3652F | #B3652F | Hover y pulsado de la acción principal |
 | Sobre relleno | `--on-fill` | #000000 | #000000 | Texto de la acción principal |
 | Correcto | `--ok` / `--ok-soft` | #1F6B45 / #DCEBE2 | #7FCFA0 / #1D4A3F | Chip "al día", paso hecho |
 | Aviso | `--warn` / `--warn-soft` | #6F5800 / #F2ECCB | #E2C766 / #46412B | Chip de pendientes |
@@ -155,8 +160,8 @@ Calculada con la fórmula de luminancia relativa de WCAG 2.x sobre los valores h
 | `--accent-ink` | `--accent-soft` | Chip "Activa" | 4.5:1 | 10.89 | 7.63 | sí |
 | `--ink` | `--accent-soft` | Fila u opción elegida | 4.5:1 | 16.64 | 7.84 | sí |
 | `--ink-2` | `--accent-soft` | Subtítulo de fila u opción elegida | 4.5:1 | 6.77 | 5.59 | sí |
-| `--on-fill` | `--fill` | Botón principal | 4.5:1 | 8.29 | 8.29 | sí |
-| `--on-fill` | `--fill-hover` | Botón principal en hover | 4.5:1 | 6.62 | 6.62 | sí |
+| `--on-fill` | `--fill` | Botón principal | 4.5:1 | 5.68 | 5.68 | sí |
+| `--on-fill` | `--fill-hover` | Botón principal en hover y pulsado | 4.5:1 | 4.82 | 4.82 | sí |
 | `--ok` | `--ok-soft` | Chip correcto, paso hecho | 4.5:1 | 5.24 | 5.39 | sí |
 | `--warn` | `--warn-soft` | Chip de aviso | 4.5:1 | 5.74 | 6.14 | sí |
 | `--bad` | `--bad-soft` | Chip de error | 4.5:1 | 5.34 | 5.68 | sí |
@@ -177,17 +182,19 @@ Calculada con la fórmula de luminancia relativa de WCAG 2.x sobre los valores h
 
 Notas:
 - La pareja más justa es `--ink-3` sobre `--bg-hover` en claro (4,57:1). Si `--bg-hover` se oscurece, hay que volver a medir.
+- `--on-fill` sobre `--fill-hover` (4,82:1) es la segunda más justa: el hover del terracota no puede oscurecerse más sin perder AA con texto negro (#B0622F daría 4,63:1).
+- Terracota medido 2026-11-06 con la misma fórmula. Si algún día se usara `--fill` como elemento gráfico (barra, marca del día) en vez de relleno de botón: 3,12:1 sobre `--bg-muted` claro, 3,70:1 sobre blanco, 4,21:1 sobre `--bg-muted` oscuro y 5,07:1 sobre `--bg` oscuro; pasa 3:1 pero no 4,5:1, así que nunca como color de texto.
 - `--border` (#D3D7DD / #2A4352) no figura porque solo separa contenido y no delimita controles; no debe usarse como borde de un control interactivo.
 - El texto desactivado está exento de AA según WCAG, pero aun así se mide y cumple.
 
 ## Open Questions
-- [NEEDS CLARIFICATION: la maqueta cubre Panel, Plan diario, Vocabulario, la hoja de estados, el diálogo de ruta y el cajón móvil. ¿Se aprueba aplicar el mismo esqueleto a las otras 15 vistas sin maqueta propia, o se quiere ver antes alguna (por ejemplo Simulacro o Writing, que tienen más estados)?]
-- [NEEDS CLARIFICATION: "Ajustes" y "Cuenta" están en el pie del lateral, fuera de los grupos "Estudiar" y "Atajos". ¿De acuerdo, o deben ir dentro de "Atajos"?]
-- [NEEDS CLARIFICATION: el tema oscuro mantiene el naranja #FE7F2D con texto negro (8,29:1). ¿Se acepta igual en oscuro o se prefiere un naranja algo más apagado?]
-- [NEEDS CLARIFICATION: Instrument Sans se carga hoy desde Google Fonts en la maqueta. En la app, ¿se sirve la fuente desde el propio sitio (funciona sin conexión, ya que la app es offline-first) o se acepta la dependencia externa?]
+- Resueltas el 2026-11-05 por el dueño: el esqueleto se aplica a todas las vistas; Ajustes y Cuenta en el pie del lateral; mismo acento en oscuro; Instrument Sans alojada en la app (`public/fonts/`, sin Google Fonts).
+- Resuelta el 2026-11-06: el acento pasa a terracota #C2703F.
+- [NEEDS CLARIFICATION: "Mi seguimiento" aparece en la maqueta como vista propia en "Atajos" (recomendación de `specs/landing-y-acceso/plan.md`, decisión 4). ¿Se aprueba ahí, o va como sección de Cuenta?]
+- [NEEDS CLARIFICATION: el mensaje del dueño del 2026-11-06 nombra como usos del acento "botón principal, día de hoy en el plan y barras de progreso". La maqueta y AC-3 lo dejan solo en el botón principal (día actual y barras siguen en petróleo). ¿Se mantiene así o se pasa el día actual y las barras a terracota? Si se cambia, AC-3 se reescribe y se miden las parejas de la nota de arriba.]
 
 ## Dependencies
 - Paleta v2 ya presente en `src/styles/global.css` (rama `redesign/ui`).
 - `specs/selector-de-ruta/`: define el comportamiento del diálogo de ruta; este rediseño solo le da piel.
 - Aprobación de la maqueta `docs/diseno/maqueta-rediseno.html` antes de tocar `src/`.
-- Suite de tests de interfaz (no existe): para medir AC-13, AC-15, AC-17 y AC-18 de forma repetible hace falta montarla como primera tarea del plan.
+- Suite de tests de interfaz (no existe): para medir AC-13, AC-15, AC-17 y AC-18 de forma repetible hace falta montarla como primera tarea del plan. Es la misma suite (`npm run test:ui`) de la que depende `specs/landing-y-acceso/` desde su fase 3; la monta esta feature.

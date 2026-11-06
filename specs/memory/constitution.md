@@ -34,4 +34,4 @@ The public landing (and its sample activities) works without an account and save
 New UI ships with its announcements (`aria-live`), focus handling, labels and keyboard operation. WCAG 2.1 AA is the floor.
 
 ### 10. Colors only from tokens
-No hex or rgb values outside the token blocks at the top of `src/styles/global.css`. The orange accent is a fill, never text on a light surface.
+No hex or rgb values outside the token blocks at the top of `src/styles/global.css`. The terracotta accent (#C2703F, decided 2026-11-06) is a fill, never text on a light surface.

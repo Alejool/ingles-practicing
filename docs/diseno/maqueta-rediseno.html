@@ -4,28 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Maqueta rediseño limpio</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wdth,wght@75..100,400..700&display=swap" rel="stylesheet">
 <style>
+/* Fuente: el mismo archivo que la app servirá desde su propio origen
+   (public/fonts/, decisión 2026-11-05): @fontsource-variable/instrument-sans
+   5.3.0, subconjunto latin, ejes wght 400–700 y wdth 75–100, OFL 1.1.
+   Aquí se pide a jsDelivr con versión fijada; sin red cae a Helvetica/Arial. */
+@font-face{
+  font-family:"Instrument Sans";font-style:normal;font-display:swap;
+  font-weight:400 700;font-stretch:75% 100%;
+  src:url("https://cdn.jsdelivr.net/npm/@fontsource-variable/instrument-sans@5.3.0/files/instrument-sans-latin-wdth-normal.woff2") format("woff2-variations");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
 /* ── Fichas ───────────────────────────────────────────────────────────
    Mismos colores que la paleta v2 de src/styles/global.css; cambian los
    papeles: el blanco es la zona de trabajo y el gris #EAECF0 marca lo que
    no es contenido (lateral, cifras, hover). Petróleo = activo, elegido,
-   foco. Naranja = solo el relleno de la única acción principal. */
+   foco. Terracota = solo el relleno de la única acción principal, con
+   texto negro (decisión 2026-11-05: sustituye al naranja #FE7F2D). */
 :root{
   --bg:#FFFFFF; --bg-muted:#EAECF0; --bg-hover:#DDE0E6; --bg-active:#FFFFFF;
   --ink:#000000; --ink-2:#3B4F5C; --ink-3:#55656F; --nav-active-ink:#233D4D; --on-accent:#FFFFFF;
   --border:#D3D7DD; --border-control:#74808A;
   --accent:#233D4D; --accent-soft:#DFE6EA; --accent-ink:#16303F;
-  --fill:#FE7F2D; --fill-hover:#E96C17; --on-fill:#000000;
+  --fill:#C2703F; --fill-hover:#B3652F; --on-fill:#000000;
   --ok:#1F6B45; --ok-soft:#DCEBE2; --bad:#A3352E; --bad-soft:#F5E0DD; --warn:#6F5800; --warn-soft:#F2ECCB;
   --focus:#233D4D;
   --shadow-dialog:0 24px 48px -12px rgba(11,19,24,.28), 0 2px 6px rgba(11,19,24,.10);
   --scrim:rgba(11,19,24,.40);
 
   --font:"Instrument Sans","Helvetica Neue",Arial,sans-serif;
-  --t-display:32px; --t-stat:32px; --t-h2:20px; --t-h3:17px; --t-body:15px; --t-small:13px; --t-micro:12px;
+  --t-hero:44px; --t-display:32px; --t-stat:32px; --t-h2:20px; --t-h3:17px; --t-body:15px; --t-small:13px; --t-micro:12px;
 
   --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px; --s10:40px; --s12:48px;
   --r-lg:14px; --r-md:12px; --r-sm:8px; --r-xs:6px;
@@ -238,6 +246,110 @@ dialog[open]{animation:pop var(--d-slow) var(--ease-out)}
 .note{font-size:14px;line-height:20px;color:var(--ink-2);background:var(--bg-muted);border-radius:var(--r-sm);padding:var(--s3)}
 .dlg-actions{display:flex;gap:var(--s2);justify-content:flex-end;flex-wrap:wrap}
 
+/* ── Mi seguimiento ── */
+.skills{list-style:none;margin:0;padding:0;border-top:1px solid var(--border)}
+.skill{display:grid;grid-template-columns:minmax(0,1fr) 136px 128px;gap:var(--s4);align-items:center;padding:var(--s3) 0;border-bottom:1px solid var(--border)}
+.skill .nm{font-weight:600;font-size:15px;line-height:22px}
+.skill .src{display:block;font-size:var(--t-small);line-height:20px;color:var(--ink-3)}
+.skill .lv{text-align:right;display:flex;flex-direction:column;align-items:flex-end}
+.skill .lv b{font-size:var(--t-h3);line-height:24px;font-weight:600;font-variant-numeric:tabular-nums}
+.skill .lv span{font-size:var(--t-small);line-height:20px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.spark{position:relative;display:flex;align-items:flex-end;gap:3px;height:40px;border-bottom:1px solid var(--border-control)}
+.spark::after{content:"";position:absolute;left:0;right:0;bottom:70%;border-top:1px dashed var(--ink-3)}
+.spark i{flex:1;background:var(--accent);border-radius:2px 2px 0 0;min-height:2px}
+.spark i.low{background:var(--bad)}
+.spark-legend{display:flex;justify-content:space-between;font-size:var(--t-micro);line-height:16px;color:var(--ink-3);margin-top:var(--s1)}
+.facts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.facts li{padding:var(--s3) 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+.facts li:last-child{border-bottom:0}
+.facts b{font-weight:600}
+.facts span{font-size:var(--t-small);line-height:20px;color:var(--ink-3)}
+.times{font-variant-numeric:tabular-nums;font-stretch:87.5%}
+.prop-acts{display:flex;gap:var(--s2);flex-wrap:wrap}
+.rowcard.prop{align-items:flex-start;flex-wrap:wrap}
+.rowcard.prop:hover{background:var(--bg)}
+.rowcard.prop .tx{flex:1 1 260px;gap:var(--s1)}
+.rowcard.prop .tx span.eff{color:var(--ink-2)}
+.decided{font-size:var(--t-small);line-height:20px;color:var(--ink-2);display:flex;gap:var(--s1);align-items:center}
+.decided svg.i{color:var(--ok)}
+
+/* ── landing (fuera del shell) ── */
+[hidden]{display:none!important}
+.landing{background:var(--bg);min-height:100vh;min-height:100dvh}
+.l-in{max-width:1120px;margin:0 auto;padding-inline:var(--s12)}
+.l-top{display:flex;align-items:center;gap:var(--s4);padding-block:var(--s5);flex-wrap:wrap}
+.wordmark{display:flex;align-items:center;gap:var(--s3);font-weight:600;font-size:16px;line-height:20px;margin-right:auto}
+.wordmark .badge{font-size:12px}
+.mockbar{display:flex;gap:var(--s1);flex-wrap:wrap;align-items:center;border:1px dashed var(--border-control);border-radius:10px;padding:var(--s1)}
+.mockbar .micro{padding:0 var(--s2)}
+.l-hero{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);gap:var(--s12);align-items:start;padding-block:var(--s10) var(--s12)}
+.l-hero .t{display:flex;flex-direction:column;gap:var(--s4)}
+.hero{font-size:var(--t-hero);line-height:48px;font-weight:600;font-stretch:87.5%;letter-spacing:-.015em;text-wrap:balance}
+.l-hero .lede{font-size:17px;line-height:26px}
+.entry{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s4);max-width:480px}
+.entry label{font-size:var(--t-small);line-height:20px;font-weight:600}
+.entry .line{display:flex;gap:var(--s2);flex-wrap:wrap}
+.entry .input{flex:1 1 220px;width:auto}
+.entry .btn{min-height:44px}
+.sent{display:flex;flex-direction:column;gap:var(--s3);align-items:flex-start;margin-top:var(--s4);max-width:480px;padding:var(--s5);border:1px solid var(--ok);border-radius:var(--r-md);background:var(--ok-soft)}
+.sent .h3{display:flex;gap:var(--s2);align-items:center}
+.sent .h3 svg.i{color:var(--ok)}
+.sent p{color:var(--ink-2)}
+.sent b.addr{color:var(--ink);overflow-wrap:anywhere}
+.banner.warn{background:var(--warn-soft);border-color:var(--warn)}
+.banner.warn svg.i{color:var(--warn)}
+.try{display:flex;flex-direction:column;gap:var(--s4)}
+.try .q{font-size:var(--t-h2);line-height:28px;font-weight:500;text-wrap:pretty}
+.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2)}
+.ans{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);min-height:48px;padding:var(--s2) var(--s4);border:1px solid var(--border-control);border-radius:var(--r-sm);background:var(--bg);text-align:left;cursor:pointer;font-size:15px;line-height:22px;font-weight:500;transition:background-color var(--d-fast) ease,border-color var(--d-fast) ease,transform var(--d-base) var(--ease-out)}
+.ans:active:not(:disabled){transform:scale(.97)}
+.ans:disabled{cursor:default;color:var(--ink-2)}
+.ans .tag{font-size:var(--t-micro);line-height:16px;font-weight:600;display:inline-flex;gap:var(--s1);align-items:center}
+.ans[data-mark="ok"]{border-color:var(--ok);background:var(--ok-soft);color:var(--ink);box-shadow:inset 0 0 0 1px var(--ok)}
+.ans[data-mark="ok"] .tag{color:var(--ok)}
+.ans[data-mark="bad"]{border-color:var(--bad);background:var(--bad-soft);color:var(--ink);box-shadow:inset 0 0 0 1px var(--bad)}
+.ans[data-mark="bad"] .tag{color:var(--bad)}
+.fb{display:flex;flex-direction:column;gap:var(--s3);padding-top:var(--s4);border-top:1px solid var(--border)}
+.fb p{color:var(--ink-2)}
+.fb .gain{font-size:14px;line-height:20px;color:var(--ink);background:var(--bg-muted);border-radius:var(--r-sm);padding:var(--s3)}
+.l-band{background:var(--bg-muted);padding-block:var(--s12)}
+.l-sec{padding-block:var(--s12)}
+.l-sec-head{display:flex;flex-direction:column;gap:var(--s2);margin-bottom:var(--s6);max-width:62ch}
+.l-sec-head .h2{font-size:24px;line-height:30px}
+.weeks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3)}
+.blk{display:flex;flex-direction:column;gap:var(--s2);min-width:0}
+.ticks{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px}
+.ticks i{height:28px;border-radius:4px;background:var(--bg);border:1px solid var(--border)}
+.blk:first-child .ticks i:first-child{background:var(--accent);border-color:var(--accent)}
+.blk .wk{font-size:var(--t-micro);line-height:16px;font-weight:600;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.blk b{font-weight:600;font-size:15px;line-height:22px}
+.blk p{font-size:var(--t-small);line-height:20px;color:var(--ink-2)}
+.day{margin-top:var(--s8);display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:var(--s8);align-items:start}
+.day .blocks{border-top-color:var(--border-control)}
+.day .blocks li{grid-template-columns:72px 128px minmax(0,1fr);border-bottom-color:var(--border-control)}
+.gains{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--s10);margin:0}
+.gains div{padding:var(--s4) 0;border-top:1px solid var(--border)}
+.gains dt{font-weight:600;font-size:var(--t-h3);line-height:24px}
+.gains dd{margin:var(--s1) 0 0;color:var(--ink-2);max-width:48ch}
+.l-foot{border-top:1px solid var(--border);padding-block:var(--s6) var(--s10);display:flex;justify-content:space-between;gap:var(--s4);flex-wrap:wrap}
+.try:focus{outline:none}
+.try .q:focus{outline:none}
+.try .en{font-size:var(--t-h2);line-height:28px;font-weight:600}
+.try .ex{font-size:14px;line-height:20px;color:var(--ink-2);font-style:italic}
+.tr-src{font-size:var(--t-h3);line-height:24px}
+.tr-key{display:inline-block;font-weight:700;letter-spacing:.06em;padding:0 var(--s2);border:1px solid var(--border-control);border-radius:var(--r-xs);font-size:var(--t-small)}
+.script{list-style:none;margin:0;padding:var(--s3);display:flex;flex-direction:column;gap:var(--s2);background:var(--bg-muted);border-radius:var(--r-sm);font-size:14px;line-height:20px}
+.script b{font-weight:600;color:var(--ink-2)}
+.passes{display:flex;gap:var(--s1);list-style:none;margin:0;padding:0}
+.passes li{flex:1;height:6px;border-radius:3px;background:var(--bg-muted)}
+.passes li[data-done]{background:var(--accent)}
+.res{list-style:none;margin:0;padding:0;border-top:1px solid var(--border)}
+.res li{display:flex;justify-content:space-between;gap:var(--s3);padding:var(--s2) 0;border-bottom:1px solid var(--border);font-size:14px;line-height:20px}
+.res-score{font-size:var(--t-stat);line-height:36px;font-weight:600;font-stretch:87.5%;font-variant-numeric:tabular-nums}
+.mockrow{display:flex;gap:var(--s1);flex-wrap:wrap;align-items:center;border:1px dashed var(--border-control);border-radius:10px;padding:var(--s1);margin-bottom:var(--s6)}
+.mockrow .micro{padding:0 var(--s2)}
+.mockbar .btn[aria-pressed="true"],.mockrow .btn[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-ink)}
+
 /* ── móvil: barra superior + cajón ── */
 @media (max-width:1100px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:959px){
@@ -264,8 +376,26 @@ dialog[open]{animation:pop var(--d-slow) var(--ease-out)}
   .step .side-act{grid-column:2;justify-self:start}
   .meter{grid-template-columns:104px minmax(0,1fr) 40px}
   .btn{min-height:44px}
+  .skill{grid-template-columns:minmax(0,1fr) 96px;row-gap:var(--s2)}
+  .skill .sp{grid-column:1/-1;grid-row:2}
+  .l-in{padding-inline:var(--s4)}
+  .l-top{padding-block:var(--s3)}
+  .l-hero{grid-template-columns:minmax(0,1fr);gap:var(--s8);padding-block:var(--s4) var(--s10)}
+  .hero{font-size:var(--t-display);line-height:38px}
+  .l-hero .lede{font-size:var(--t-body);line-height:24px}
+  .l-band,.l-sec{padding-block:var(--s10)}
+  .weeks{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s5) var(--s3)}
+  .day{grid-template-columns:minmax(0,1fr);gap:var(--s4)}
+  .day .blocks li{grid-template-columns:72px minmax(0,1fr)}
+  .gains{grid-template-columns:minmax(0,1fr)}
+  .mockbar .micro{flex-basis:100%}
+  .card-head{flex-wrap:wrap}
 }
+@media (hover:hover) and (pointer:fine){.ans:hover:not(:disabled){background:var(--bg-muted)}}
 @media (max-width:420px){
+  .answers{grid-template-columns:minmax(0,1fr)}
+  .entry .btn{width:100%}
+  .hero{font-size:26px;line-height:32px}
   .tile{padding:var(--s4)}
   .tile .v{font-size:28px;line-height:32px}
   .vhead .btn-primary{width:100%;white-space:normal}
@@ -306,6 +436,10 @@ dialog[open]{animation:pop var(--d-slow) var(--ease-out)}
     <symbol id="i-sheet" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M10 10v10"/></symbol>
     <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
     <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-track" viewBox="0 0 24 24"><path d="M4 4.5v15h16"/><path d="M7.5 15l3.5-4 3 2.5 5-6"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
   </defs>
 </svg>
 
@@ -448,6 +582,91 @@ dialog[open]{animation:pop var(--d-slow) var(--ease-out)}
       <ul class="rows" id="decks"></ul>
     </section>
 
+    <!-- MI SEGUIMIENTO (specs/landing-y-acceso AC-26; datos del perfil de specs/harness-alumno) -->
+    <section class="view" id="v-seg" aria-labelledby="t-seg">
+      <div class="vhead">
+        <div class="t">
+          <span class="crumb">Mi seguimiento, 8 semanas desde tu primera entrada</span>
+          <h1 class="display" tabindex="-1" id="t-seg">Lo que la app sabe de ti</h1>
+          <p class="lede">Sale solo de lo que has hecho. Cada dato dice de qué ejercicios viene, y se actualiza cada vez que vuelves a esta vista.</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-secondary" type="button" id="segDl"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg>Descargar mi seguimiento</button>
+          <button class="btn btn-primary" type="button" data-go="gram">Practicar modales de obligación</button>
+        </div>
+      </div>
+
+      <div class="mockrow" role="group" aria-label="Estados de la maqueta">
+        <span class="micro">Solo maqueta</span>
+        <button class="btn btn-quiet btn-sm" type="button" data-sstate="data" aria-pressed="true">Con datos</button>
+        <button class="btn btn-quiet btn-sm" type="button" data-sstate="empty" aria-pressed="false">Primera semana</button>
+        <button class="btn btn-quiet btn-sm" type="button" data-sstate="load" aria-pressed="false">Cargando</button>
+        <button class="btn btn-quiet btn-sm" type="button" data-sstate="error" aria-pressed="false">Sin conexión</button>
+      </div>
+
+      <div id="segLoad" class="card stack g-16" aria-busy="true" aria-label="Cargando tu seguimiento" hidden>
+        <div class="skel" style="width:40%"></div><div class="skel" style="width:92%"></div><div class="skel" style="width:85%"></div><div class="skel" style="width:70%"></div>
+      </div>
+
+      <div id="segErr" class="banner" role="alert" hidden>
+        <svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>
+        <div class="tx"><b>No se pudo cargar tu seguimiento: no hay conexión.</b><span class="small">Lo que estudies ahora se guarda en este dispositivo y se suma al seguimiento cuando vuelva la red.</span></div>
+        <button class="btn btn-secondary" type="button" data-sstate="data">Reintentar</button>
+      </div>
+
+      <div id="segEmpty" class="empty" hidden>
+        <span class="badge"><svg class="i" aria-hidden="true"><use href="#i-track"/></svg></span>
+        <h2 class="h3">Aún no hay semanas que comparar</h2>
+        <p class="small" style="max-width:56ch">Tu punto de partida es el diagnóstico del 3 nov. (7 de 10). La evolución por destreza aparece cuando completes tu primera semana de estudio; los errores que se repiten, cuando falles lo mismo tres veces.</p>
+        <button class="btn btn-secondary" type="button" data-go="plan">Ir al día 1</button>
+      </div>
+
+      <div id="segData">
+      <section class="card" aria-labelledby="t-niv">
+        <div class="card-head">
+          <div class="stack g-8"><h2 class="h2" id="t-niv">Nivel por destreza</h2><p class="small">Aciertos semana a semana. La línea discontinua es el 70%; por debajo, la barra va en rojo.</p></div>
+          <span class="chip">Punto de partida: diagnóstico del 10 sep.</span>
+        </div>
+        <ul class="skills" id="skills"></ul>
+      </section>
+
+      <div class="split">
+        <section class="card" aria-labelledby="t-fue">
+          <div class="card-head"><h2 class="h3" id="t-fue">Puntos fuertes</h2></div>
+          <ul class="facts">
+            <li><b>Vocabulario de trabajo</b><span>81% en 1.204 repasos de Núcleo B1 y Núcleo B2</span></li>
+            <li><b>Present perfect contra past simple</b><span>18 de 20 en los últimos drills de la unidad 2</span></li>
+          </ul>
+        </section>
+        <section class="card" aria-labelledby="t-deb">
+          <div class="card-head"><h2 class="h3" id="t-deb">Puntos débiles</h2></div>
+          <ul class="facts">
+            <li><b>Transformaciones de Use of English</b><span>58% en 41 ítems de transformación y open cloze</span></li>
+            <li><b>Modales de obligación</b><span>4 de 9 en la unidad 9, la Prueba rápida y el diagnóstico</span></li>
+          </ul>
+        </section>
+      </div>
+
+      <section class="card" style="margin-top:var(--s6)" aria-labelledby="t-rep">
+        <div class="card-head"><div class="stack g-8"><h2 class="h3" id="t-rep">Errores que se repiten</h2><p class="small">El mismo fallo tres veces o más en dos semanas.</p></div></div>
+        <ul class="rows">
+          <li class="rowcard"><span class="badge times" aria-hidden="true">×5</span><span class="tx"><b><span class="sr">5 veces: </span>mustn't donde va don't have to</b><span>En 14 días: Gramática, unidad 9, y Prueba rápida</span></span></li>
+          <li class="rowcard"><span class="badge times" aria-hidden="true">×4</span><span class="tx"><b><span class="sr">4 veces: </span>«an advice», «the informations»</b><span>Use of English y tarjetas de Núcleo B2</span></span></li>
+          <li class="rowcard"><span class="badge times" aria-hidden="true">×3</span><span class="tx"><b><span class="sr">3 veces: </span>since + periodo («since three years»)</b><span>Diagnóstico y drills de la unidad 2</span></span></li>
+        </ul>
+      </section>
+
+      <section class="card" style="margin-top:var(--s6)" aria-labelledby="t-pro">
+        <div class="card-head"><div class="stack g-8"><h2 class="h3" id="t-pro">Propuestas del agente</h2><p class="small">Nada cambia en tu plan hasta que aceptes. Como mucho hay tres a la vez.</p></div><span class="chip warn">2 pendientes</span></div>
+        <ul class="rows" id="props">
+          <li class="rowcard prop"><span class="tx"><b>Añadir un repaso de modales de obligación al día 38</b><span>Por qué: has fallado mustn't / don't have to cinco veces en dos semanas.</span><span class="eff">Efecto: el día 38 suma seis drills de la unidad 9 (8 minutos). El resto del día no cambia.</span></span><span class="prop-acts"><button class="btn btn-secondary btn-sm" type="button" data-prop="ok">Aceptar</button><button class="btn btn-quiet btn-sm" type="button" data-prop="no">Rechazar</button></span></li>
+          <li class="rowcard prop"><span class="tx"><b>Repetir los incontables de la unidad 14 esta semana</b><span>Por qué: 3 de 6 en los drills de hoy y cuatro fallos con advice e information.</span><span class="eff">Efecto: el repaso del viernes de la semana 8 pasa a la unidad 14. No se quita ningún día.</span></span><span class="prop-acts"><button class="btn btn-secondary btn-sm" type="button" data-prop="ok">Aceptar</button><button class="btn btn-quiet btn-sm" type="button" data-prop="no">Rechazar</button></span></li>
+        </ul>
+        <p class="small" id="propsNone" hidden>No hay propuestas pendientes. El agente propone algo nuevo cuando ve un error que se repite.</p>
+      </section>
+      </div>
+    </section>
+
     <!-- ESTADOS -->
     <section class="view" id="v-estados" aria-labelledby="t-est">
       <div class="vhead"><div class="t"><span class="crumb">Solo maqueta</span><h1 class="display" tabindex="-1" id="t-est">Hoja de estados</h1><p class="lede">Cada tipo de control con todos sus estados, en el tema activo. Los estados forzados llevan una clase que los simula.</p></div></div>
@@ -517,11 +736,133 @@ dialog[open]{animation:pop var(--d-slow) var(--ease-out)}
       <div class="empty">
         <span class="badge"><svg class="i" aria-hidden="true"><use href="#i-sheet"/></svg></span>
         <h2 class="h3">Vista sin maquetar</h2>
-        <p class="small" style="max-width:56ch">Usa el mismo esqueleto: encabezado, cifras sobre gris si las hay, tarjetas blancas con borde de 1 px y filas. La maqueta cubre Panel, Plan diario, Vocabulario y la hoja de estados.</p>
+        <p class="small" style="max-width:56ch">Usa el mismo esqueleto: encabezado, cifras sobre gris si las hay, tarjetas blancas con borde de 1 px y filas. La maqueta cubre Panel, Plan diario, Vocabulario, Mi seguimiento, la landing pública y la hoja de estados.</p>
         <button class="btn btn-secondary" type="button" data-go="panel">Volver al panel</button>
       </div>
     </section>
   </main>
+</div>
+
+<!-- LANDING PÚBLICA: página propia /bienvenida/ (specs/landing-y-acceso, plan K-1), fuera del shell y sin lateral.
+     Cubre AC-1..7, AC-10, AC-11 y AC-23. En la maqueta se abre con #landing. -->
+<div class="landing" id="landing" hidden>
+  <header class="l-in l-top">
+    <span class="wordmark"><span class="badge badge-sm badge-accent" aria-hidden="true">R</span>Ruta de inglés</span>
+    <div class="mockbar" role="group" aria-label="Estados de la maqueta">
+      <span class="micro">Solo maqueta</span>
+      <button class="btn btn-quiet btn-sm" type="button" data-lstate="normal" aria-pressed="true">Normal</button>
+      <button class="btn btn-quiet btn-sm" type="button" data-lstate="sent" aria-pressed="false">Enlace enviado</button>
+      <button class="btn btn-quiet btn-sm" type="button" data-lstate="expired" aria-pressed="false">Enlace caducado</button>
+      <button class="btn btn-quiet btn-sm" type="button" data-lstate="failed" aria-pressed="false">Envío fallido</button>
+      <button class="btn btn-quiet btn-sm" type="button" data-lstate="off" aria-pressed="false">Entrada apagada</button>
+      <button class="btn btn-quiet btn-sm" type="button" id="lTheme">Tema oscuro</button>
+      <button class="btn btn-quiet btn-sm" type="button" data-go="panel">Ver la app</button>
+    </div>
+  </header>
+
+  <main class="l-in" id="lmain">
+    <section class="l-hero" aria-labelledby="t-land">
+      <div class="t">
+        <span class="crumb">Rutas A2 → B1 y B1 → B2, para hispanohablantes</span>
+        <h1 class="hero" tabindex="-1" id="t-land">Llega al B1 o al B2 en 24 semanas, con 45 minutos al día</h1>
+        <p class="lede">Un plan diario de vocabulario, gramática, Use of English, escucha, lectura y escritura, pensado para los errores que comete quien piensa en español. Prepara Cambridge B1 Preliminary, B2 First o IELTS.</p>
+
+        <div id="expBanner" class="banner" role="alert" hidden>
+          <svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>
+          <div class="tx"><b>Ese enlace ya no sirve.</b><span class="small">Caducó o ya se usó. Escribe tu correo otra vez y te mandamos uno nuevo.</span></div>
+        </div>
+
+        <div id="offBanner" class="banner warn" role="status" hidden>
+          <svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>
+          <div class="tx"><b>La entrada no está disponible ahora.</b><span class="small">No te mandaríamos el correo, así que no te lo pedimos. Las actividades de prueba siguen funcionando; vuelve más tarde para entrar.</span></div>
+        </div>
+
+        <form class="entry" id="entry" novalidate>
+          <label for="lmail">Tu correo</label>
+          <div class="line">
+            <input class="input" id="lmail" type="email" autocomplete="email" inputmode="email" placeholder="nombre@correo.com" aria-describedby="lmailHint">
+            <button class="btn btn-primary" type="submit" id="lgo">Entrar con tu correo</button>
+          </div>
+          <span class="hint" id="lmailHint">Te mandamos un enlace para entrar. Sin contraseña; vale igual si es tu primera vez.</span>
+          <span class="hint err" id="lmailErr" hidden><svg class="i i-sm" style="margin-top:2px" aria-hidden="true"><use href="#i-alert"/></svg><span id="lmailErrTx"></span></span>
+        </form>
+
+        <div class="sent" id="sent" role="status" tabindex="-1" hidden>
+          <h2 class="h3"><svg class="i" aria-hidden="true"><use href="#i-mail"/></svg>Revisa tu correo</h2>
+          <p>Hemos enviado un enlace a <b class="addr" id="sentTo">ana.garcia@correo.com</b>. Ábrelo en este dispositivo: caduca en 15 minutos y solo sirve una vez.</p>
+          <div class="row">
+            <button class="btn btn-secondary" type="button" id="resend">Reenviar el enlace</button>
+            <button class="btn btn-quiet" type="button" id="other">Usar otro correo</button>
+          </div>
+        </div>
+      </div>
+
+      <section class="card try" id="try" tabindex="-1" aria-labelledby="tryCount">
+        <div class="row" style="justify-content:space-between">
+          <span class="micro" id="tryCount">Pruébalo ahora: diagnóstico B1 → B2</span>
+          <span class="chip" id="tryArea"></span>
+        </div>
+        <div class="stack g-16" id="tryBody"></div>
+      </section>
+    </section>
+  </main>
+
+  <section class="l-band" aria-labelledby="t-plan24">
+    <div class="l-in">
+      <div class="l-sec-head">
+        <span class="crumb">Ruta B1 → B2</span>
+        <h2 class="h2" id="t-plan24">Cuatro bloques de seis semanas</h2>
+        <p class="lede">Cinco sesiones por semana, 120 en total. Cada día sabes qué hacer y en qué orden.</p>
+      </div>
+      <ol class="weeks" style="list-style:none;margin:0;padding:0">
+        <li class="blk"><span class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="wk">Semanas 1–6</span><b>Reconstruir la base</b><p>Tiempos verbales, duración, futuro y orden de la frase. Cierra con el primer simulacro.</p></li>
+        <li class="blk"><span class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="wk">Semanas 7–12</span><b>Del B1 sólido al B2 inicial</b><p>Obligación, artículos e incontables, preposiciones, gerundio o infinitivo y condicionales.</p></li>
+        <li class="blk"><span class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="wk">Semanas 13–18</span><b>Precisión y rango B2</b><p>Grados de certeza, relativas, pasiva, estilo indirecto, causativo y conectores.</p></li>
+        <li class="blk"><span class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="wk">Semanas 19–24</span><b>Formato, velocidad y nervios</b><p>Cohesión, writing y speaking por formato, ensayo general y semana del examen.</p></li>
+      </ol>
+      <div class="day">
+        <div class="stack g-8"><h3 class="h3">Un día cualquiera: el 37</h3><p class="small">Incontables que en español sí son contables. Lo que hagas cambia lo que te toca mañana.</p></div>
+        <ol class="blocks">
+          <li><span class="min">0–8 min</span><span class="nm">Vocabulario</span><span class="wh">12 tarjetas, incluidas las que fallaste ayer.</span></li>
+          <li><span class="min">8–20 min</span><span class="nm">Gramática</span><span class="wh">Seis drills de la unidad 14, sin mirar la regla.</span></li>
+          <li><span class="min">20–34 min</span><span class="nm">Use of English</span><span class="wh">Seis ítems de open cloze.</span></li>
+          <li><span class="min">34–45 min</span><span class="nm">Producción</span><span class="wh">Diez frases con information, advice, news y equipment.</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="l-sec l-in" aria-labelledby="t-muestra">
+    <div class="l-sec-head">
+      <h2 class="h2" id="t-muestra">Prueba sin cuenta</h2>
+      <p class="lede">Actividades reales del curso, corregidas al momento. No se guarda nada: al recargar la página empiezan de cero.</p>
+    </div>
+    <ul class="rows">
+      <li class="rowcard"><span class="badge" aria-hidden="true">DG</span><span class="tx"><b>Diagnóstico completo</b><span>Diez preguntas de tu ruta y tu nivel por destreza. Es lo único que pasa a tu cuenta si entras en esta pestaña.</span></span><button class="btn btn-quiet act" type="button" data-try="diag" aria-label="Empezar el diagnóstico completo">Empezar</button></li>
+      <li class="rowcard"><span class="badge" aria-hidden="true">VO</span><span class="tx"><b>Tarjetas de vocabulario</b><span>Ocho palabras de Núcleo B1: dices si la sabes y ves si acertaste.</span></span><button class="btn btn-quiet act" type="button" data-try="cards" aria-label="Empezar las tarjetas de vocabulario">Empezar</button></li>
+      <li class="rowcard"><span class="badge" aria-hidden="true">LI</span><span class="tx"><b>Escucha en tres pases</b><span>Idea general, detalle y transcripción, con la voz de tu navegador.</span></span><button class="btn btn-quiet act" type="button" data-try="listen" aria-label="Empezar la escucha en tres pases">Empezar</button></li>
+      <li class="rowcard"><span class="badge" aria-hidden="true">UE</span><span class="tx"><b>Use of English</b><span>Transformaciones como las del B2 First, con la explicación de cada respuesta.</span></span><button class="btn btn-quiet act" type="button" data-try="uoe" aria-label="Empezar Use of English">Empezar</button></li>
+    </ul>
+  </section>
+
+  <section class="l-sec l-in" style="padding-top:0" aria-labelledby="t-gana">
+    <div class="l-sec-head">
+      <h2 class="h2" id="t-gana">Con cuenta tienes todo</h2>
+      <p class="lede">No hay planes de pago. Sin cuenta pruebas; con cuenta estudias.</p>
+    </div>
+    <dl class="gains">
+      <div><dt>Tu progreso, guardado</dt><dd>En el móvil y en el ordenador. Si estudias sin conexión, se sube solo al volver la red.</dd></div>
+      <div><dt>El plan entero</dt><dd>Las 120 sesiones de tu ruta, con el día de hoy siempre a mano.</dd></div>
+      <div><dt>Mi seguimiento</dt><dd>Tu nivel por destreza semana a semana, y de qué ejercicios sale cada dato.</dd></div>
+      <div><dt>Un agente que mira tus errores</dt><dd>Propone repasos y ajustes del plan; tú decides si los aceptas.</dd></div>
+    </dl>
+    <div style="margin-top:var(--s8)"><button class="btn btn-secondary" type="button" data-focus-mail><svg class="i" aria-hidden="true"><use href="#i-mail"/></svg>Escribir mi correo</button></div>
+  </section>
+
+  <footer class="l-in l-foot">
+    <span class="small">Ruta de inglés. Funciona sin conexión una vez cargada.</span>
+    <span class="small">Si ya estudiabas aquí sin cuenta, tu progreso pasa a tu cuenta al entrar.</span>
+  </footer>
 </div>
 
 <dialog id="routeDlg" aria-labelledby="dlgT">
@@ -537,6 +878,8 @@ dialog[open]{animation:pop var(--d-slow) var(--ease-out)}
   </form>
 </dialog>
 
+<p class="sr" id="live" aria-live="polite"></p>
+
 <script>
 (() => {
   const NAV = [
@@ -544,13 +887,13 @@ dialog[open]{animation:pop var(--d-slow) var(--ease-out)}
       ["panel","Panel","panel"],["plan","Plan diario","plan"],["vocab","Vocabulario","vocab",24],["mine","Mis palabras","mine",7],
       ["gram","Gramática","gram"],["uoe","Use of English","uoe"],["input","Listening & Reading","input"],["writing","Writing","writing"],
       ["speak","Speaking","speak"],["tutor","Tutor","tutor"],["quiz","Prueba rápida","quiz"],["mock","Simulacro","mock"]]],
-    ["Atajos", [["diag","Diagnóstico","diag"],["examenes","Qué examen","exam"],["errors","Cuaderno de errores","errors"],["res","Recursos","res"]]],
+    ["Atajos", [["seg","Mi seguimiento","track"],["diag","Diagnóstico","diag"],["examenes","Qué examen","exam"],["errors","Cuaderno de errores","errors"],["res","Recursos","res"]]],
   ];
   const OPTS = [["ajustes","Ajustes","settings"],["cuenta","Cuenta","account"]];
-  const TITLES = {examenes:"Qué examen presentar",diag:"Prueba de nivel",gram:"Las 18 unidades que deciden tu nota",mine:"El cuaderno de lo que se te atraganta",uoe:"Use of English",writing:"Escribir para el corrector",input:"Entrada: oír y leer con método",speak:"Hablar solo, con cronómetro y corrección",quiz:"Cinco minutos para saber por dónde vas",mock:"Examen cronometrado",errors:"Tu lista negra personal",tutor:"Conversación con corrección",res:"Con qué material trabajar",ajustes:"Configuración de la app",cuenta:"Entrar y sincronizar"};
-  const MOCKED = ["panel","plan","vocab","estados"];
+  const TITLES = {examenes:"Qué examen presentar",diag:"Prueba de nivel",gram:"Las 18 unidades que deciden tu nota",mine:"El cuaderno de lo que se te atraganta",uoe:"Use of English",writing:"Escribir para el corrector",input:"Entrada: oír y leer con método",speak:"Hablar solo, con cronómetro y corrección",quiz:"Cinco minutos para saber por dónde vas",mock:"Examen cronometrado",errors:"Tu lista negra personal",tutor:"Conversación con corrección",res:"Con qué material trabajar",ajustes:"Configuración de la app",cuenta:"Tu cuenta y tus dispositivos"};
+  const MOCKED = ["panel","plan","vocab","seg","estados"];
   const label = Object.fromEntries([...NAV.flatMap(([, items]) => items), ...OPTS].map(([id, txt]) => [id, txt]));
-  label.estados = "Hoja de estados";
+  label.estados = "Hoja de estados"; label.landing = "Landing pública";
   const ico = n => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
   const item = ([id,txt,ic,count]) => `<button class="nav-item" type="button" data-go="${id}">${ico(ic)}<span>${txt}</span>${count ? `<span class="count"><span class="sr">, </span>${count}<span class="sr"> pendientes</span></span>` : ""}</button>`;
 
@@ -558,7 +901,7 @@ dialog[open]{animation:pop var(--d-slow) var(--ease-out)}
     `<div class="group" role="group" aria-labelledby="g${i}"><span class="micro group-label" id="g${i}">${g}</span>${items.map(item).join("")}</div>`).join("");
   document.getElementById("opts").innerHTML = `<span class="micro group-label">Opciones</span>` + OPTS.map(item).join("")
     + `<button class="nav-item" type="button" id="themeBtn">${ico("theme")}<span id="themeTxt">Tema oscuro</span></button>`
-    + `<div class="mock-only"><button class="nav-item" type="button" data-go="estados">${ico("sheet")}<span>Hoja de estados</span></button></div>`;
+    + `<div class="mock-only"><button class="nav-item" type="button" data-go="estados">${ico("sheet")}<span>Hoja de estados</span></button><button class="nav-item" type="button" data-go="landing">${ico("mail")}<span>Landing pública</span></button></div>`;
 
   const mainEl = document.getElementById("main"), topbar = document.querySelector(".topbar");
   const side = document.getElementById("side"), scrim = document.getElementById("scrim"), menuBtn = document.getElementById("menuBtn");
@@ -575,7 +918,19 @@ dialog[open]{animation:pop var(--d-slow) var(--ease-out)}
   document.addEventListener("keydown", e => { if (e.key === "Escape" && side.classList.contains("open")) setDrawer(false); });
   mq.addEventListener("change", () => { if (!mq.matches && side.classList.contains("open")) setDrawer(false, false); });
 
+  const app = document.querySelector(".app"), landing = document.getElementById("landing");
+  const live = document.getElementById("live");
+  const say = t => { live.textContent = ""; setTimeout(() => { live.textContent = t; }, 30); };
   const go = (id, moveFocus = true) => {
+    const isLanding = id === "landing";
+    app.hidden = isLanding; landing.hidden = !isLanding;
+    if (isLanding) {
+      if (side.classList.contains("open")) setDrawer(false, false);
+      scrollTo(0, 0);
+      if (moveFocus) document.getElementById("t-land").focus({ preventScroll: true });
+      history.replaceState(null, "", "#landing");
+      return;
+    }
     const mocked = MOCKED.includes(id);
     document.querySelectorAll(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + (mocked ? id : "otra")));
     if (!mocked) { document.getElementById("t-otra").textContent = TITLES[id] || label[id]; document.getElementById("otraCrumb").textContent = label[id]; }
@@ -591,8 +946,10 @@ dialog[open]{animation:pop var(--d-slow) var(--ease-out)}
   /* tema: sin elección sigue al sistema; el botón fija claro u oscuro */
   const themeBtn = document.getElementById("themeBtn");
   const effective = () => document.documentElement.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-  const paintTheme = () => { document.getElementById("themeTxt").textContent = effective() === "dark" ? "Tema claro" : "Tema oscuro"; };
-  themeBtn.addEventListener("click", () => { document.documentElement.dataset.theme = effective() === "dark" ? "light" : "dark"; paintTheme(); });
+  const paintTheme = () => { const t = effective() === "dark" ? "Tema claro" : "Tema oscuro"; document.getElementById("themeTxt").textContent = t; document.getElementById("lTheme").textContent = t; };
+  const flipTheme = () => { document.documentElement.dataset.theme = effective() === "dark" ? "light" : "dark"; paintTheme(); };
+  themeBtn.addEventListener("click", flipTheme);
+  document.getElementById("lTheme").addEventListener("click", flipTheme);
   const qs = new URLSearchParams(location.search).get("theme");
   if (qs === "dark" || qs === "light") document.documentElement.dataset.theme = qs;
   paintTheme();
@@ -637,6 +994,268 @@ dialog[open]{animation:pop var(--d-slow) var(--ease-out)}
     dl.setAttribute("aria-busy", "true"); dl.innerHTML = '<span class="spin" aria-hidden="true"></span>Corrigiendo';
     setTimeout(() => { dl.removeAttribute("aria-busy"); dl.textContent = "Corregir mi texto"; }, 1600);
   });
+
+  /* botón ocupado: spinner + texto + aria-busy; devuelve la función que lo restaura */
+  const busy = (btn, text) => {
+    const prev = btn.innerHTML;
+    btn.setAttribute("aria-busy", "true"); btn.setAttribute("aria-disabled", "true");
+    btn.innerHTML = `<span class="spin" aria-hidden="true"></span>${text}`;
+    return () => { btn.removeAttribute("aria-busy"); btn.removeAttribute("aria-disabled"); btn.innerHTML = prev; };
+  };
+  const isBusy = btn => btn.getAttribute("aria-busy") === "true";
+  const press = (group, attr, val) => group.querySelectorAll(`[${attr}]`).forEach(b => b.setAttribute("aria-pressed", String(b.getAttribute(attr) === val)));
+
+  /* ── Mi seguimiento: perfil de ejemplo (8 semanas) ── */
+  const SEG = [
+    ["Gramática","312 drills de 9 unidades",[52,55,61,60,66,69,71,74]],
+    ["Vocabulario","1.204 repasos de 4 mazos",[70,72,75,74,77,79,80,81]],
+    ["Use of English","41 ítems de transformación y open cloze",[44,47,50,52,51,55,57,58]],
+    ["Reading","6 textos, 38 preguntas",[60,63,64,68,70,69,71,72]],
+    ["Listening","5 audios en tres pases, 30 preguntas",[50,52,55,54,58,60,61,62]],
+    ["Writing","Aún no has entregado ningún texto",null],
+  ];
+  document.getElementById("skills").innerHTML = SEG.map(([n, src, w]) => {
+    if (!w) return `<li class="skill"><span><span class="nm">${n}</span><span class="src">${src}</span></span><span class="sp micro">Sin datos todavía</span><span class="lv"><b>—</b><span>sin intentos</span></span></li>`;
+    const last = w[w.length - 1], diff = last - w[0];
+    return `<li class="skill"><span><span class="nm">${n}</span><span class="src">${src}</span></span>`
+      + `<span class="sp"><span class="spark" aria-hidden="true">${w.map(v => `<i class="${v < 70 ? "low" : ""}" style="height:${v}%"></i>`).join("")}</span><span class="spark-legend" aria-hidden="true"><span>sem. 1</span><span>sem. 8</span></span><span class="sr">Semana 1: ${w[0]}%. Semana 8: ${last}%.</span></span>`
+      + `<span class="lv"><b>${last}%</b><span>${diff >= 0 ? "+" : "−"}${Math.abs(diff)} en 8 semanas</span></span></li>`;
+  }).join("");
+
+  const props = document.getElementById("props"), propChip = document.querySelector("#v-seg .chip.warn");
+  props.querySelectorAll(".prop").forEach(li => {
+    const what = li.querySelector(".tx b").textContent;
+    li.querySelectorAll("[data-prop]").forEach(b => b.insertAdjacentHTML("beforeend", `<span class="sr">: ${what}</span>`));
+  });
+  props.addEventListener("click", e => {
+    const b = e.target.closest("[data-prop]"); if (!b) return;
+    const li = b.closest("li"), ok = b.dataset.prop === "ok";
+    const msg = ok ? "Aceptada. Ya está en tu plan." : "Rechazada. Tu plan no cambia.";
+    li.querySelector(".prop-acts").outerHTML = `<p class="decided" tabindex="-1">${ico(ok ? "check" : "x")}${msg}</p>`;
+    li.querySelector(".decided").focus();
+    const left = props.querySelectorAll("[data-prop]").length / 2;
+    propChip.className = left ? "chip warn" : "chip ok";
+    propChip.textContent = left ? `${left} pendiente${left > 1 ? "s" : ""}` : "Sin pendientes";
+    document.getElementById("propsNone").hidden = left > 0;
+    say(msg);
+  });
+
+  const segParts = { data: "segData", empty: "segEmpty", load: "segLoad", error: "segErr" };
+  const segState = st => {
+    Object.entries(segParts).forEach(([k, id]) => { document.getElementById(id).hidden = k !== st; });
+    press(document.querySelector("#v-seg .mockrow"), "data-sstate", st);
+  };
+  document.getElementById("v-seg").addEventListener("click", e => {
+    const b = e.target.closest("[data-sstate]"); if (!b) return;
+    if (b.closest(".mockrow")) return segState(b.dataset.sstate);
+    segState("load"); say("Cargando tu seguimiento");
+    setTimeout(() => { segState("data"); document.getElementById("t-seg").focus(); say("Seguimiento cargado"); }, 900);
+  });
+  const segDl = document.getElementById("segDl");
+  segDl.addEventListener("click", () => {
+    if (isBusy(segDl)) return;
+    const done = busy(segDl, "Preparando el archivo");
+    setTimeout(() => { done(); say("Descargado: seguimiento-2026-11-05.json"); }, 900);
+  });
+
+  /* ── Landing: muestra jugable con contenido real de src/data/b1b2 ── */
+  const DIAG = [
+    ["Tiempos verbales","I ___ in this city for six years and I still love it.",["live","am living","have lived","lived"],2,"Acción que empezó en el pasado y <b>sigue</b> hasta hoy → present perfect. En español dices «vivo aquí desde hace seis años» en presente, y ese es exactamente el calco que el examen castiga."],
+    ["Tiempos verbales","When I got to the office, the meeting ___.",["already started","has already started","was already starting","had already started"],3,"Dos hechos pasados: el que ocurre <b>antes</b> va en past perfect. «Cuando llegué, la reunión ya había empezado»."],
+    ["Modales","You ___ pay now — you can do it when the order ships.",["mustn't","don't have to","shouldn't have to","can't"],1,"<b>mustn't</b> = está prohibido. <b>don't have to</b> = no es necesario. El español «no tienes que» cubre las dos ideas, y ahí se pierde el punto."],
+    ["Preposiciones","She's really good ___ solving problems under pressure.",["in","at","for","on"],1,"<b>good at + -ing</b>. Preposición dependiente fija; no se deduce del español («buena resolviendo»)."],
+    ["Falsos amigos","___ I'm working on a payments integration.",["Actually","Currently","Eventually","Sensibly"],1,"<b>Actually</b> = «en realidad», no «actualmente». <b>Eventually</b> = «finalmente», no «eventualmente». Dos de los falsos amigos más caros del examen."],
+    ["Cuantificadores","There weren't ___ people at the talk, maybe twelve.",["much","a lot","many","plenty"],2,"<b>many</b> con contables en negativa. <i>much</i> es para incontables; <i>a lot</i> necesita <i>of</i> delante del sustantivo."],
+    ["Relativas","That's the developer ___ built the payment gateway.",["which","what","who","whose"],2,"Personas → <b>who</b> (o <i>that</i>). <b>what</b> nunca es pronombre relativo en inglés, aunque el español use «que» para todo."],
+    ["Condicionales","If the tests ___, we'll deploy tonight.",["will pass","pass","passed","would pass"],1,"Primer condicional: <i>if</i> + presente simple, resultado con <i>will</i>. Nunca <i>will</i> después de <i>if</i> en este tipo."],
+    ["Comparativos","This release is ___ stable than the last one.",["much more","more much","very more","the most"],0,"Intensificadores del comparativo: <b>much / far / a lot / slightly</b> + more. <i>very</i> nunca modifica un comparativo."],
+    ["Gerundio e infinitivo","I'm looking forward to ___ from you.",["hear","hearing","have heard","be hearing"],1,"<b>look forward to</b> lleva <i>to</i> como preposición, no como infinitivo: siempre + <b>-ing</b>. Igual con <i>be used to</i> y <i>get used to</i>."],
+  ];
+  const CARDS = [["achieve","lograr, conseguir","She achieved everything she set out to do."],["afford","permitirse (económicamente)","We can't afford to lose another client."],["apply for","solicitar (un puesto, una beca)","I applied for three jobs last week."],["borrow","pedir prestado","Can I borrow your charger? (≠ lend, prestar)"],["complain","quejarse","Several users complained about the new layout."],["deadline","fecha límite","We moved the deadline to Friday."],["deserve","merecer","After that release, the team deserves a break."],["improve","mejorar","My listening has improved a lot this month."]];
+  const TRANS = {s1:"I haven't seen her since 2019.",key:"LAST",s2:["The","her was in 2019."],a:["last time i saw"],e:"<b>The last time I saw</b>. Estructura fija <i>the last time + sujeto + pasado simple</i>."};
+  const LISTEN = {title:"Changing careers at forty",context:"Un programa de radio entrevista a Ruth, que dejó la banca para hacerse carpintera.",who:{A:"Presentador",B:"Ruth"},
+    lines:[["A","Ruth, you worked in banking for almost twenty years. What made you leave?"],["B","People assume it was the stress, and there was plenty of that. But what really pushed me was realising I'd spent two decades producing nothing I could actually touch."],["A","And you'd been doing woodwork as a hobby?"],["B","For years, yes. I'd been making furniture for friends at weekends, so when I finally left, I wasn't starting from zero. I'd already built up a small list of clients."],["A","Was the financial side frightening?"],["B","I won't pretend it wasn't. I earn about a third of what I used to. But I'd saved for two years before resigning, which gave me a cushion."],["A","Any regrets?"],["B","Only that I didn't do it sooner. Though, to be fair, I don't think I'd have had the skills or the confidence at thirty."]],
+    q:"What was Ruth's main reason for leaving banking?",o:["The level of stress in the job","A wish to create physical things","Pressure from her clients"],a:1,e:"Menciona el estrés para descartarlo: «what really pushed me was… producing nothing I could actually touch»."};
+  const norm = t => t.toLowerCase().replace(/[.,!?;:'’]/g, "").replace(/\s+/g, " ").trim();
+
+  const tryBody = document.getElementById("tryBody"), tryCount = document.getElementById("tryCount"), tryArea = document.getElementById("tryArea");
+  const T = { mode: "diag", i: 0, score: [], known: [], pass: 0, speaking: false };
+  const head = (count, chip) => { tryCount.textContent = count; tryArea.textContent = chip; tryArea.hidden = !chip; };
+  const answers = (opts, qid) => `<div class="answers" role="group" aria-labelledby="${qid}">${opts.map((o, k) => `<button class="ans" type="button" data-ans="${k}" lang="en"><span>${o}</span><span class="tag" lang="es"></span></button>`).join("")}</div>`;
+  const mark = (picked, right) => {
+    tryBody.querySelectorAll("[data-ans]").forEach(b => {
+      const k = +b.dataset.ans; b.disabled = true;
+      if (k === right) { b.dataset.mark = "ok"; b.querySelector(".tag").innerHTML = `${ico("check")}Correcta`; }
+      else if (k === picked) { b.dataset.mark = "bad"; b.querySelector(".tag").innerHTML = `${ico("x")}Tu respuesta`; }
+    });
+  };
+  const endActions = again => `<div class="row"><button class="btn btn-secondary" type="button" data-focus-mail>${ico("mail")}Entrar con tu correo</button><button class="btn btn-quiet" type="button" data-try="${again}">Repetir</button><button class="btn btn-quiet" type="button" data-other>Probar otra actividad</button></div>`;
+  const GAIN = "Con cuenta guardas el progreso, tienes el plan de 24 semanas, tu seguimiento personal y un agente que adapta el estudio a tus errores.";
+  const focusIn = sel => { const el = tryBody.querySelector(sel); if (el) el.focus({ preventScroll: true }); };
+
+  const render = () => {
+    const m = T.mode;
+    if (m === "diag") {
+      if (T.i >= DIAG.length) {
+        const ok = T.score.filter(Boolean).length, pct = ok / DIAG.length * 100;
+        const band = pct > 75 ? "Por encima de B1: empiezas el bloque 1 a buen ritmo." : pct >= 50 ? "En B1: la ruta B1 → B2 es tu sitio." : "Por debajo de B1: te conviene empezar por A2 → B1.";
+        head("Pruébalo ahora: diagnóstico B1 → B2, resultado", "");
+        tryBody.innerHTML = `<div class="stack g-8"><span class="res-score" id="t-try" tabindex="-1">${ok} de ${DIAG.length}</span><p>${band}</p></div>`
+          + `<ul class="res">${DIAG.map(([area], k) => `<li><span>${area}</span><span class="chip ${T.score[k] ? "ok" : "bad"}">${T.score[k] ? "acertada" : "fallada"}</span></li>`).join("")}</ul>`
+          + `<p class="gain">Si entras con tu correo en esta pestaña, este resultado pasa a tu cuenta como punto de partida y no repites el diagnóstico. Si cierras la pestaña, se pierde.</p>` + endActions("diag");
+        return;
+      }
+      const [area, q, opts] = DIAG[T.i];
+      head(`Pruébalo ahora: diagnóstico B1 → B2, pregunta ${T.i + 1} de ${DIAG.length}`, area);
+      tryBody.innerHTML = `<p class="q" id="t-try" tabindex="-1" lang="en">${q}</p>${answers(opts, "t-try")}<div class="fb" id="tryFb" hidden></div>`;
+    }
+    if (m === "cards") {
+      if (T.i >= CARDS.length) {
+        const k = T.known.filter(Boolean).length, miss = CARDS.filter((_, j) => !T.known[j]).map(c => c[0]);
+        head("Pruébalo ahora: tarjetas de Núcleo B1, resultado", "");
+        tryBody.innerHTML = `<div class="stack g-8"><span class="res-score" id="t-try" tabindex="-1">${k} de ${CARDS.length}</span><p>${miss.length ? `En la app, estas volverían mañana: <b lang="en">${miss.join(", ")}</b>. Las que sabes, dentro de unos días.` : "Las sabías todas. En la app no volverían hasta dentro de unos días."}</p></div><p class="gain">${GAIN}</p>` + endActions("cards");
+        return;
+      }
+      const [en, , ex] = CARDS[T.i];
+      head("Pruébalo ahora: tarjetas de Núcleo B1", `Tarjeta ${T.i + 1} de ${CARDS.length}`);
+      tryBody.innerHTML = `<div class="stack g-8"><span class="en" id="t-try" tabindex="-1" lang="en">${en}</span><p class="ex" lang="en">${ex}</p></div>`
+        + `<div class="row" id="cardActs"><button class="btn btn-secondary" type="button" data-card="1">Lo sé</button><button class="btn btn-secondary" type="button" data-card="0">No lo sé</button></div><div class="fb" id="tryFb" hidden></div>`;
+    }
+    if (m === "uoe") {
+      head("Pruébalo ahora: Use of English, transformación", "Key word transformation");
+      tryBody.innerHTML = `<p class="tr-src" id="t-try" tabindex="-1" lang="en">${TRANS.s1}</p>`
+        + `<p lang="en">${TRANS.s2[0]} <span aria-hidden="true">______</span><span class="sr" lang="es">hueco</span> ${TRANS.s2[1]}</p>`
+        + `<form class="field" id="uoeForm" novalidate style="max-width:none"><label for="uoeIn">Completa el hueco con 2 a 5 palabras, incluida <span class="tr-key" lang="en">${TRANS.key}</span></label>`
+        + `<div class="row"><input class="input" id="uoeIn" autocomplete="off" autocapitalize="off" spellcheck="false" lang="en" style="flex:1 1 200px;width:auto" aria-describedby="uoeHint"><button class="btn btn-secondary" type="submit">Comprobar</button></div>`
+        + `<span class="hint" id="uoeHint">No cambies la palabra clave. Las contracciones cuentan como dos palabras.</span><span class="hint err" id="uoeErr" hidden>${ico("alert")}<span></span></span></form><div class="fb" id="tryFb" hidden></div>`;
+    }
+    if (m === "listen") {
+      head(`Pruébalo ahora: escucha, ${LISTEN.title}`, `Pase ${Math.min(T.pass + 1, 3)} de 3`);
+      const canSpeak = "speechSynthesis" in window;
+      const label = T.pass === 0 ? "Escuchar: idea general" : T.pass === 1 ? "Escuchar otra vez: detalle" : "Escuchar con la transcripción";
+      tryBody.innerHTML = `<p id="t-try" tabindex="-1">${LISTEN.context}</p>`
+        + `<ol class="passes" aria-hidden="true">${[0, 1, 2].map(k => `<li${k < T.pass ? " data-done" : ""}></li>`).join("")}</ol>`
+        + (canSpeak ? "" : `<div class="banner warn" role="status">${ico("alert")}<div class="tx"><b>Tu navegador no tiene voz en inglés.</b><span class="small">Lee la transcripción: es el mismo audio.</span></div></div>`)
+        + (T.pass < 3 ? `<div class="row"><button class="btn btn-secondary" type="button" id="playBtn">${label}</button>${T.pass ? `<span class="small">Pase ${T.pass} de 3 hecho</span>` : ""}</div>` : "")
+        + (T.pass >= 1 ? `<p class="q" id="lq" tabindex="-1" lang="en">${LISTEN.q}</p>${answers(LISTEN.o, "lq")}` : `<p class="small">La pregunta aparece después del primer pase. La transcripción, después del segundo.</p>`)
+        + (T.pass >= 2 || !canSpeak ? `<ul class="script" lang="en">${LISTEN.lines.map(([s, t]) => `<li><b>${LISTEN.who[s]}:</b> ${t}</li>`).join("")}</ul>` : "")
+        + `<div class="fb" id="tryFb" hidden></div>`;
+    }
+  };
+  const feedback = (html, actions) => { const fb = document.getElementById("tryFb"); fb.innerHTML = html + actions; fb.hidden = false; };
+  const startTry = (mode, focus = true) => {
+    if (T.speaking) speechSynthesis.cancel();
+    Object.assign(T, { mode, i: 0, score: [], known: [], pass: 0, speaking: false });
+    render();
+    if (focus) { document.getElementById("try").scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); focusIn("#t-try"); }
+  };
+
+  tryBody.addEventListener("click", e => {
+    const a = e.target.closest("[data-ans]");
+    if (a && T.mode === "diag") {
+      const [, , opts, right, exp] = DIAG[T.i], picked = +a.dataset.ans;
+      T.score[T.i] = picked === right; mark(picked, right);
+      const last = T.i === DIAG.length - 1;
+      feedback(`<p>${exp}</p>`, `<div class="row"><button class="btn btn-secondary" type="button" data-next>${last ? "Ver mi resultado" : "Siguiente pregunta"}</button><button class="btn btn-quiet" type="button" data-focus-mail>Usar mi correo</button></div>`);
+      say(T.score[T.i] ? "Correcta." : `No. La correcta es ${opts[right]}.`);
+      focusIn("[data-next]");
+    }
+    if (a && T.mode === "listen") {
+      const picked = +a.dataset.ans; mark(picked, LISTEN.a);
+      feedback(`<p>${LISTEN.e}</p><p class="gain">${GAIN}</p>`, endActions("listen"));
+      say(picked === LISTEN.a ? "Correcta." : `No. La correcta es: ${LISTEN.o[LISTEN.a]}.`);
+      focusIn("[data-focus-mail]");
+    }
+    if (e.target.closest("[data-next]")) { T.i++; render(); focusIn("#t-try"); }
+    const c = e.target.closest("[data-card]");
+    if (c) {
+      const knew = c.dataset.card === "1", [en, es] = CARDS[T.i];
+      T.known[T.i] = knew;
+      document.getElementById("cardActs").hidden = true;
+      feedback(`<p><b lang="en">${en}</b> = ${es}</p>`, `<div class="row"><button class="btn btn-secondary" type="button" data-next>${T.i === CARDS.length - 1 ? "Ver cómo te fue" : "Siguiente tarjeta"}</button></div>`);
+      say(`${en}: ${es}`);
+      focusIn("[data-next]");
+    }
+    const p = e.target.closest("#playBtn");
+    if (p && !isBusy(p)) {
+      const advance = () => { T.speaking = false; T.pass++; render(); focusIn(T.pass < 3 ? "#playBtn" : "#lq"); say(`Pase ${T.pass} de 3 hecho.`); };
+      if (!("speechSynthesis" in window)) return advance();
+      busy(p, "Reproduciendo");
+      T.speaking = true; speechSynthesis.cancel();
+      LISTEN.lines.forEach(([s, t], k) => {
+        const u = new SpeechSynthesisUtterance(t); u.lang = "en-GB"; u.rate = .95; u.pitch = s === "A" ? 1 : .9;
+        if (k === LISTEN.lines.length - 1) { u.onend = advance; u.onerror = advance; }
+        speechSynthesis.speak(u);
+      });
+    }
+  });
+  tryBody.addEventListener("submit", e => {
+    if (e.target.id !== "uoeForm") return;
+    e.preventDefault();
+    const inp = document.getElementById("uoeIn"), err = document.getElementById("uoeErr"), v = norm(inp.value);
+    if (!v) { inp.setAttribute("aria-invalid", "true"); inp.setAttribute("aria-describedby", "uoeErr uoeHint"); err.lastElementChild.textContent = "Escribe tu respuesta antes de comprobar."; err.hidden = false; inp.focus(); return; }
+    inp.removeAttribute("aria-invalid"); inp.setAttribute("aria-describedby", "uoeHint"); err.hidden = true;
+    const ok = TRANS.a.includes(v);
+    inp.readOnly = true; e.target.querySelector("button").disabled = true;
+    feedback(`<p class="decided">${ico(ok ? "check" : "x")}<b>${ok ? "Correcta." : "Todavía no."}</b></p><p>${TRANS.e}</p><p class="gain">${GAIN}</p>`, endActions("uoe"));
+    say(ok ? "Correcta." : "Todavía no. La respuesta es the last time I saw.");
+    focusIn("[data-focus-mail]");
+  });
+  tryBody.addEventListener("input", e => { if (e.target.id === "uoeIn" && e.target.getAttribute("aria-invalid")) { e.target.removeAttribute("aria-invalid"); document.getElementById("uoeErr").hidden = true; } });
+
+  /* entrada por correo: validación, carga, enviado y errores del flujo (AC-8, AC-10, AC-11) */
+  const entry = document.getElementById("entry"), lmail = document.getElementById("lmail"), lgo = document.getElementById("lgo");
+  const lErr = document.getElementById("lmailErr"), sent = document.getElementById("sent");
+  const expBanner = document.getElementById("expBanner"), offBanner = document.getElementById("offBanner");
+  const FAILED = "No pudimos enviar el correo. Tu dirección sigue escrita: inténtalo otra vez en un momento.";
+  let lmode = "normal";
+  const fieldErr = msg => {
+    lmail.setAttribute("aria-invalid", "true"); lmail.setAttribute("aria-describedby", "lmailErr lmailHint");
+    document.getElementById("lmailErrTx").textContent = msg; lErr.hidden = false;
+  };
+  const clearErr = () => { lmail.removeAttribute("aria-invalid"); lmail.setAttribute("aria-describedby", "lmailHint"); lErr.hidden = true; };
+  lmail.addEventListener("input", clearErr);
+  entry.addEventListener("submit", e => {
+    e.preventDefault();
+    if (isBusy(lgo) || lgo.disabled) return;
+    const v = lmail.value.trim();
+    if (!v) { fieldErr("Escribe tu correo para recibir el enlace."); return lmail.focus(); }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { fieldErr("Falta el dominio completo, por ejemplo ana@correo.com."); return lmail.focus(); }
+    clearErr();
+    const done = busy(lgo, "Enviando el enlace");
+    setTimeout(() => {
+      done();
+      if (lmode === "failed") { fieldErr(FAILED); return lmail.focus(); }
+      document.getElementById("sentTo").textContent = v;
+      entry.hidden = true; expBanner.hidden = true; sent.hidden = false; sent.focus();
+    }, 900);
+  });
+  const resend = document.getElementById("resend");
+  resend.addEventListener("click", () => {
+    if (isBusy(resend)) return;
+    const done = busy(resend, "Reenviando");
+    setTimeout(() => { done(); say(`Te hemos enviado otro enlace a ${document.getElementById("sentTo").textContent}.`); }, 900);
+  });
+  document.getElementById("other").addEventListener("click", () => { sent.hidden = true; entry.hidden = false; lmail.focus(); lmail.select(); });
+  const lState = st => {
+    lmode = st; press(document.querySelector(".mockbar"), "data-lstate", st);
+    clearErr(); expBanner.hidden = st !== "expired"; offBanner.hidden = st !== "off";
+    lmail.disabled = lgo.disabled = st === "off";
+    sent.hidden = st !== "sent"; entry.hidden = st === "sent";
+    if (st === "failed") { lmail.value = "ana.garcia@correo.com"; fieldErr(FAILED); }
+  };
+  offBanner.tabIndex = -1;
+  landing.addEventListener("click", e => {
+    const s = e.target.closest("[data-lstate]"); if (s) lState(s.dataset.lstate);
+    const t = e.target.closest("[data-try]"); if (t) startTry(t.dataset.try);
+    if (e.target.closest("[data-other]")) { const first = document.querySelector('.act[data-try="diag"]'); first.closest("ul").scrollIntoView({ block: "center" }); first.focus({ preventScroll: true }); }
+    if (e.target.closest("[data-focus-mail]")) {
+      if (lmail.disabled) { offBanner.focus(); return; }
+      if (entry.hidden) { sent.hidden = true; entry.hidden = false; }
+      document.getElementById("t-land").scrollIntoView({ block: "start" }); lmail.focus({ preventScroll: true });
+    }
+  });
+  startTry("diag", false);
 
   const start = location.hash.slice(1);
   go(label[start] ? start : "panel", false);
