@@ -1,17 +1,20 @@
 # Harness del alumno — Plan técnico
 
-Fuente funcional: `specs/harness-alumno/spec.md`. Backend: Laravel hexagonal (`specs/backend-separado/plan.md`, ADR 0001). ADRs: `docs/adr/0002-harness-alumno.md`, `docs/adr/0003-react-islas-en-astro.md`. Donde el spec asume Node o `db/schema.sql`, este plan lo reinterpreta y lo lista en "Cambios respecto al spec".
+Fuente funcional: `specs/harness-alumno/spec.md`. Backend: Laravel hexagonal (`specs/backend-separado/plan.md`, ADR 0001). ADRs: `docs/adr/0002-harness-alumno.md`, `docs/adr/0003-react-islas-en-astro.md`, `docs/adr/0004-memoria-semantica-pgvector.md`. Donde el spec asume Node o `db/schema.sql`, este plan lo reinterpreta y lo lista en "Cambios respecto al spec".
 
-**Requisito bloqueante**: `backend-separado` terminado (fase 5 como mínimo; el front en `frontend/` tras su fase 6), servidor de `tutor-contextual` hecho en Laravel, `ruta-b2-c1` fase 1 (lista única de rutas, exportada en `tracks.json`).
+**Requisito bloqueante**: `backend-separado` terminado (fase 5 como mínimo; el front en `frontend/` tras su fase 6), servidor de `tutor-contextual` hecho en Laravel, `ruta-b2-c1` fase 1 (lista única de rutas, exportada en `tracks.json`). Para el cliente: `landing-y-acceso` con la cuenta obligatoria, `cuenta-local.ts` (claves por cuenta) y la subida/fusión del progreso local. Para (e): Postgres con pgvector y el contenedor de embeddings (fase 12, con autorización).
+
+**Cuenta obligatoria (2026-11-05).** Desde `landing-y-acceso` todo estudiante de la app tiene cuenta y no existe la clave propia de DeepSeek: el harness no tiene ramas "sin cuenta" ni "clave propia". `HARNESS_ENABLED` apaga solo el **agente** (lo que llama al modelo); los datos del alumno (eventos, perfil con su evolución, Mi seguimiento, exportación) funcionan con cuenta aunque el agente esté apagado (spec AC-2).
 
 ## Technical Approach
 
 La idea central: **PHP decide, el modelo redacta.** El harness guía a cada estudiante según quién es, y esa decisión es determinista y barata:
 
-1. **Eventos** (solo inserción) → **perfil** (`LearnerProfile`, derivado sin modelo).
+1. **Eventos** (solo inserción) → **perfil** (`LearnerProfile`, derivado sin modelo, con evolución semanal y origen de cada dato para Mi seguimiento).
 2. **Guía** (`Guide`, política determinista): con el perfil y el tipo de ejecución elige el **foco** (qué punto trabajar, a qué nivel, con qué tono, cuál es el siguiente paso) **antes** de llamar al modelo.
 3. **Bucle** (`RunLoop`): el modelo ligero recibe un prompt corto, el foco y un resumen acotado, y solo puede redactar dentro de ese foco con 1–3 herramientas de esquema estricto. Límites duros de pasos, tiempo y créditos que no dependen de nada que diga el modelo.
-4. **Validación** en cada borde: lo que manda el cliente, lo que pide el modelo (argumentos), lo que devuelve cada herramienta y lo que sale hacia el cliente o la base.
+4. **Recuperación** (capacidad e): con el foco ya decidido, PHP trae los N recuerdos del estudiante y fragmentos de contenido más parecidos (pgvector + modelo de embeddings local) y los mete en el resumen acotado. No decide nada: solo aporta ejemplos.
+5. **Validación** en cada borde: lo que manda el cliente, lo que pide el modelo (argumentos), lo que devuelve cada herramienta y lo que sale hacia el cliente o la base.
 
 Consecuencias: la mayoría de ejecuciones hacen **una** llamada al modelo; "revisar mi plan" sin nada que proponer **no** llama al modelo; el siguiente paso recomendado se calcula sin gastar nada.
 
@@ -26,12 +29,15 @@ Todo vive en un único contexto `backend/src/Learner` (perfil + harness): separa
 | S-3 | Tipos de ajuste del plan | Dos, ambos aditivos: `bloque_refuerzo` y `repetir_unidad`. Se quita `mover_repaso` (mueve, no añade). |
 | S-4 | Ejercicios generados | Se guardan (evento `ejercicio`) y se pueden reabrir. |
 | S-5 | Fuente de eventos | El cliente, en lotes, desde un único gancho en `bump()`. |
-| S-6 | Aviso de envío a DeepSeek | Sí: una vez, antes de la primera ejecución, con aceptación explícita (guardada en una clave nueva de `localStorage`). |
+| S-6 | Aviso de envío a DeepSeek | Sí: una vez, antes de la primera ejecución, con aceptación explícita, guardada en la clave nueva `ruta-b1b2-aviso-harness`, **por cuenta** (en `CLAVES_POR_CUENTA` de `cuenta-local.ts`). Sin aceptar, la bienvenida sale con la plantilla y no se ofrece el resto del agente. |
 | S-7 | Supresión | Solo la de cuenta entera (cascada). Sin excepción a "sin DELETE". |
 | S-8 | Validación JSON | A mano, sin dependencias: un comprobador mínimo de un subconjunto de JSON Schema (el mismo array que se manda al modelo como `parameters`) + reglas semánticas escritas a mano. |
 | S-9 | Modelo | Siempre `HARNESS_MODEL` (por defecto `deepseek-flash`, modo sin razonamiento); se ignora el modelo de Ajustes. |
 | S-10 | Llamadas reales | ~10, solo con `HARNESS_LIVE_TESTS=1` y autorización del gasto. |
-| S-11 | TUT y coste | El harness solo sirve la **primera** explicación de un tema para quien tiene cuenta; las repreguntas siguen por el `explain` de TUT (1 crédito). |
+| S-11 | TUT y coste | El harness solo sirve la **primera** explicación de un tema; las repreguntas siguen por el `explain` de TUT (1 crédito). |
+| S-12 | Qué apaga `HARNESS_ENABLED` | Solo el agente (`POST /api/harness/runs` y la redacción de la bienvenida). Eventos, perfil, Mi seguimiento y exportación siguen activos con cuenta (spec AC-2). |
+| S-13 | Bienvenida con modelo | Cuarto tipo de ejecución, `bienvenida`, una vez por estudiante y ruta, ≈ 1 crédito; datos con las mismas reglas que `bienvenida.ts` de `landing-y-acceso` (verificadas con fixture dorada) y caída a su plantilla. |
+| S-14 | Embeddings | `intfloat/multilingual-e5-small` servido por Text Embeddings Inference en un contenedor; pgvector 0.8.6 (ver "(e) Memoria semántica" y ADR 0004). |
 
 ## Modelo de dominio (`backend/src/Learner/Domain`)
 
@@ -40,14 +46,16 @@ PHP puro, sin `Illuminate`.
 | Pieza | Qué es |
 |---|---|
 | `Events\AnswerEvent` | Evento del cliente validado: `clientId`, `track`, `area`, `ok`, `ref?`, `dada?` (≤ 80), `occurredAt` (recortada a [ahora − 30 d, ahora + 5 min]). Invariantes en el constructor. |
-| `Events\EventKind` | Enum: `respuesta`, `punto_partida`, `observacion`, `propuesta`, `decision`, `ejercicio`. |
-| `Profile\StartingPoint` | Deriva el punto de partida del JSON de `progress` (solo lectura): `stats` por área, aciertos por unidad de `gram` si el formato lo permite, recuento del cuaderno de errores por categoría (sin texto), día del plan, días hechos, racha, fecha de examen. |
+| `Events\EventKind` | Enum: `respuesta`, `punto_partida`, `observacion`, `propuesta`, `decision`, `ejercicio`, `bienvenida`. |
+| `Profile\StartingPoint` | Deriva el punto de partida del JSON de `progress` (solo lectura): el **diagnóstico** de la ruta (`tracks[ruta].diag.answers` + `stats.diag`) convertido en aciertos/preguntas por destreza con el área de cada pregunta del contenido exportado (AC-77), `stats` por área, aciertos por unidad de `gram` si el formato lo permite, recuento del cuaderno de errores por categoría (sin texto), día del plan, días hechos, racha, fecha de examen. |
 | `Profile\LearnerProfile` | Objeto de valor (ver abajo). |
+| `Profile\WeeklySeries` | Serie semanal por destreza (12 semanas ISO) a partir de recuentos agregados; misma regla de banda que el perfil (AC-78). |
 | `Profile\ProfileDeriver` | `derive(StartingPoint?, AnswerEvent[], observaciones, hoy) → LearnerProfile`. Determinista: mismas entradas, mismo perfil. |
 | `Guide\Guide` | Política: `focusFor(RunKind, LearnerProfile, RunRequest) → Focus` y `nextStep(LearnerProfile) → NextStep`. |
+| `Guide\Welcome` | `welcome(StartingPoint, díaInicio, bloquesDelDía) → WelcomeData { niveles, puntos[3], hoy }`: las reglas de `bienvenida.ts` de `landing-y-acceso` portadas a PHP (bandas < 50 / 50–75 / > 75 %, tres áreas de menor acierto con empates por orden del diagnóstico, día de inicio 1/4/9/13 y sus bloques). Paridad por fixture dorada (AC-76). |
 | `Guide\Focus` | `tipo` (`error_recurrente`, `unidad_debil`, `destreza`, `pedido`), `ref`, `area`, `nivel`, `tono`, candidatos de propuesta (≤ 2) o tipo de ejercicio. |
 | `Harness\Limits` | Topes leídos de un array (el adaptador le pasa el entorno): pasos, segundos, créditos, tokens de contexto, propuestas pendientes; caída al defecto si falta, no es entero o está fuera de rango. |
-| `Harness\RunKind` | `explicar`, `revisar_plan`, `ejercicios`: herramientas ofrecidas, tope de salida por llamada, herramienta terminal. |
+| `Harness\RunKind` | `explicar`, `revisar_plan`, `ejercicios`, `bienvenida`: herramientas ofrecidas (ninguna en `bienvenida`), tope de salida por llamada, herramienta terminal. |
 | `Harness\StopReason` | `fin`, `max_pasos`, `tiempo`, `presupuesto`, `cuota`, `error`, `rechazo_tema`. |
 | `Harness\ContextBuilder` | Compone el resumen (texto) con presupuesto de tokens; nunca incluye el JSON de progreso. |
 | `Harness\Untrusted` | Envuelve texto no fiable (del estudiante o salido del modelo y guardado) como dato delimitado. |
@@ -55,9 +63,13 @@ PHP puro, sin `Illuminate`.
 | `Harness\Tool` (puerto) | `name()`, `schema()`, `run(array $args, RunContext $ctx): ToolResult`. Seis implementaciones en `Application/Tools`. |
 | `Schema\Checker` | Comprobador del subconjunto de JSON Schema usado (`type`, `properties`, `required`, `additionalProperties:false`, `enum`, `minLength`, `maxLength`, `pattern`, `minimum`, `maximum`, `items`, `minItems`, `maxItems`). Una palabra clave fuera de la lista hace fallar un test de arranque. |
 | `Schema\ToolSchemas`, `Schema\OutputSchemas` | Los arrays de esquema (fuente única: se mandan al modelo y se validan con ellos). |
+| `Memory\EmbeddingPort` (puerto) | `embed(list<string> $textos, Rol $rol): list<list<float>>` (rol `consulta`/`pasaje`, que pone el prefijo `query: `/`passage: ` de e5), `model(): string`; lanza `EmbeddingUnavailable`. |
+| `Memory\VectorSearch` (puerto) | `content(track, version, model, vector, k)` y `memories(userId, track, model, vector, k) → Hit[]` (`ref` o `eventId`, similitud). |
+| `Memory\ContentChunker` | Contenido exportado de una ruta → fragmentos `{ref, tipo, titulo, texto ≤ 1 200}` deterministas. |
+| `Memory\MemoryText` | Evento (`respuesta` fallada u `observacion`) + contenido → texto a vectorizar (enunciado del ítem ≤ 200, respuesta dada ≤ 80, título de la unidad; u observación). No se guarda: se recompone al recuperar (AC-75). |
 | `Schema\ExerciseRules`, `Schema\ProposalRules` | Reglas que el esquema no expresa: una sola correcta, respuesta dentro de las opciones, opciones distintas, ref existente en el contenido de la ruta, día dentro de los próximos 7 y de la ruta, punto apuntado presente en el perfil. |
 
-Puertos del contexto: `Tool` (nuevo) y los ya existentes `ChatModel` y `Clock`. Nada más.
+Puertos del contexto: `Tool`, `EmbeddingPort` y `VectorSearch` (nuevos) y los ya existentes `ChatModel` y `Clock`. Los dos de (e) tienen segundo adaptador real o de test (ver "(e) Memoria semántica").
 
 Árbol del contexto:
 
@@ -65,12 +77,14 @@ Puertos del contexto: `Tool` (nuevo) y los ya existentes `ChatModel` y `Clock`. 
 backend/src/Learner/
 ├── Domain/{Events, Profile, Guide, Harness, Schema}/…        (tabla de arriba)
 ├── Application/
-│   ├── {IngestEvents, GetProfile, ExportLearnerData, ListProposals, DecideProposal, ListExercises, GetExercise, StartRun}.php
+│   ├── {IngestEvents, GetProfile, ExportLearnerData, ListProposals, DecideProposal, ListExercises, GetExercise, StartRun, GetWelcome}.php
+│   ├── Memory/{Retriever, IndexContent, IndexLearnerMemories}.php
 │   └── Tools/{ReadProfileTool, ReadProgressTool, SearchContentTool, RecordObservationTool, ProposePlanTool, GenerateExerciseTool}.php
-└── Infrastructure/{LearnerEventRepository, HarnessRunRepository, ProgressReader, ContentIndex}.php
-backend/app/Http/Controllers/Learner/{StatusController, EventsController, ProfileController, ProposalsController, ProposalDecisionController, ExercisesController, ExportController, RunController}.php
+└── Infrastructure/{LearnerEventRepository, HarnessRunRepository, ProgressReader, ContentIndex, TeiEmbeddingClient, PgVectorSearch, FullTextSearch, MemoryRepository}.php
+backend/app/Console/Commands/{IndexContentCommand, IndexMemoriesCommand}.php      learner:index-content, learner:index-memories
+backend/app/Http/Controllers/Learner/{StatusController, EventsController, ProfileController, ProposalsController, ProposalDecisionController, ExercisesController, ExportController, RunController, WelcomeController}.php
 backend/app/Http/Requests/Learner/{IngestEventsRequest, DecideProposalRequest, StartRunRequest}.php
-backend/app/Http/Middleware/HarnessEnabled.php
+backend/app/Http/Middleware/HarnessEnabled.php                                   solo en POST /api/harness/runs (S-12)
 ```
 
 `ContentIndex` lee `resources/content/<ruta>.json` (exportado del front, ver plan de backend-separado); `ProgressReader` solo hace `select` sobre `progress`. Ninguno tiene interfaz: un adaptador y se prueban con datos reales.
@@ -85,6 +99,9 @@ erroresRecurrentes:  [{ clave: "gram:<unidad>:<i>" | "area:<area>", veces, ejemp
 vocabularioDominado: { total, muestra: ["vocab:<mazo>:<i>", …] }                    muestra ≤ 20
 ritmo:       { diaPlan, diasHechos, racha, diasActivos14, constancia: constante|irregular|parado, margen: holgado|justo|sin_fecha }
 datosSuficientes: bool
+evolucion:   [{ semana: "2026-W44", destrezas: { <area>: { intentos, aciertos, banda } } }]    ≤ 12, la más reciente al final
+fuertes:     [{ ref: "gram:<unidad>" | "area:<area>", intentos, aciertos, origen }]  ≤ 5
+origen (en unidadesDebiles, erroresRecurrentes, fuertes y cada destreza): { refs: [≤ 5], respuestas, ultima: ISO }
 ```
 
 Reglas (constantes de dominio, con test cada una):
@@ -95,7 +112,10 @@ Reglas (constantes de dominio, con test cada una):
 - Vocabulario dominado: tarjeta con sus 3 últimas respuestas correctas.
 - Constancia: días con actividad en 14 → ≥ 8 `constante`, 3–7 `irregular`, < 3 `parado`.
 - Margen: con fecha de examen, días que quedan frente a días de plan que faltan (`holgado` si sobran ≥ 7, si no `justo`); sin fecha, `sin_fecha`.
-- Datos suficientes: ≥ 20 respuestas en la ventana (contando las del punto de partida).
+- Datos suficientes: ≥ 20 respuestas en la ventana (contando las del punto de partida; las diez del diagnóstico cuentan).
+- Evolución (AC-78): eventos `respuesta` de las últimas 12 semanas ISO, agregados en SQL (`date_trunc('week', occurred_at)`, área → intentos, aciertos) y con la misma regla de banda; una semana sin datos sale con `sin_datos`. Sin instantáneas: el agregado es barato con el índice `(user_id, kind, occurred_at)`.
+- Punto fuerte: unidad con ≥ 5 intentos y ≥ 85 % de aciertos, o destreza `por_encima`.
+- Origen: para cada dato, hasta 5 refs (las más frecuentes), número de respuestas y fecha de la última; el punto de partida aparece como ref `partida:<ruta>`.
 
 ### Guía (política determinista)
 
@@ -106,6 +126,7 @@ Reglas (constantes de dominio, con test cada una):
 | Siguiente paso (sin modelo) | Primer error recurrente → "Repasa <unidad>: has fallado <n> veces …"; si no, primera unidad débil → "Vuelve a la unidad …"; si no, destreza más baja con datos → "Practica <área>"; si no, "Sigue con el día <n> del plan". Texto por plantilla en español. |
 | `explicar` | Foco = la `ref` pedida. Si coincide con un error recurrente o una unidad débil, el foco lleva `relacion` (la clave y el recorte del error) para que la explicación lo mencione (AC-25). |
 | `revisar_plan` | Candidatos: error recurrente → `bloque_refuerzo` (10/15/20 min según tono) sobre su unidad; unidad débil → `repetir_unidad`. Día: el siguiente día de estudio (`diaPlan + 1`; `+ 2` si el margen es holgado y el siguiente ya es de repaso). Se excluyen refs con propuesta pendiente o aceptada en los últimos 7 días. Máximo 2 candidatos. **Sin candidatos → no se llama al modelo**: resultado `sin_cambios`, 0 créditos. |
+| `bienvenida` | Sin foco ni candidatos: `Welcome` calcula `WelcomeData` (niveles por área del diagnóstico, tres puntos, qué toca hoy). Sin diagnóstico en la ruta → 422 `sin_diagnostico` antes de reservar nada. |
 | `ejercicios` | Foco: error recurrente → drill de su unidad; si no, unidad débil → drill; si no, destreza más baja: `read` → lectura, `listen` → escucha, resto → drill. Sin perfil suficiente → 422 `sin_datos` antes de reservar nada. Si el cliente pide un tipo, se respeta si hay foco para él. |
 
 ## Herramientas (contratos)
@@ -146,6 +167,9 @@ StartRun(usuario, dispositivo, ipHash, tipo, ruta, datos):
        revisar_plan: pendientes ≥ tope → 409 propuestas_pendientes (sin gasto)
        revisar_plan sin candidatos → run 'fin' sin modelo, resultado sin_cambios
        ejercicios sin foco → 422 sin_datos
+       bienvenida sin diagnóstico → 422 sin_diagnostico; ya existe el evento bienvenida → devolverlo (0 créditos)
+  4b. recuperación (e): Retriever con la consulta del foco → ≤ HARNESS_RAG_TOP_K recuerdos y fragmentos
+       (explicar, ejercicios; no en revisar_plan ni bienvenida). Sin modelo de chat; caída a texto completo.
   5. reserva ← ReserveCredits(…, kind 'harness', créditos = HARNESS_MAX_CREDITS)
        falla → harness_runs con motivo 'cuota' y el mismo error de cuota de siempre (429/402/503)
   6. RunLoop:
@@ -177,6 +201,7 @@ StartRun(usuario, dispositivo, ipHash, tipo, ruta, datos):
 Notas:
 - **"Último turno sin herramientas"**: cuando ya no cabe otra llamada (pasos o presupuesto), la llamada se hace con `tool_choice` forzado. Así una ejecución que llega al tope casi siempre devuelve algo útil en vez de nada.
 - Una ejecución hace como mucho `HARNESS_MAX_STEPS + 1` llamadas al modelo.
+- `bienvenida` no ofrece herramientas: una llamada con `response_format: json_object`, salida `{ "tipo": "bienvenida", "texto": "≤ 600" }`. Inválida, sin cuota o con el agente apagado → el endpoint devuelve `WelcomeData` con `texto: null` y el cliente pinta la plantilla de `bienvenida.ts`; en ese caso no se escribe el evento, para no fijar una bienvenida sin redactar.
 - La salida del modelo **no se transmite en streaming**: se valida entera antes de enviarla (AC-12).
 - Una caída del proceso entre 5 y 7 deja la fila de `ai_usage` con `kind = 'harness'` y el coste estimado: es la constancia de que empezó y su gasto queda registrado (AC-17). El admin las ve como "interrumpidas" (reservas `harness` sin fila en `harness_runs`).
 - Modelo: `HARNESS_MODEL` con `thinking: {type: "disabled"}` si `HARNESS_THINKING=disabled` (por defecto), `temperature` 0.7 en ejercicios y 0.3 en el resto, `response_format: json_object` cuando la llamada no ofrece herramientas.
@@ -189,6 +214,7 @@ PHP-only (`Learner\Domain\Harness\Prompts`): son del servidor, no los usa el cli
 - `explicar`: explica el foco en ≤ 80 palabras + ≤ 3 ejemplos; si hay `relacion`, empieza por ella; tono indicado.
 - `revisar_plan`: elige uno de los candidatos y escribe el motivo en una o dos frases en español.
 - `ejercicios`: crea un ejercicio del tipo y nivel indicados sobre el foco.
+- `bienvenida`: da la bienvenida en español en ≤ 90 palabras usando solo los datos dados (niveles, tres puntos, qué toca hoy); no inventes niveles ni promesas.
 
 ## Resumen para el modelo (AC-9)
 
@@ -201,6 +227,8 @@ PHP-only (`Learner\Domain\Harness\Prompts`): son del servidor, no los usa el cli
 5. Unidades débiles.
 6. Destrezas (banda y % por área).
 7. Para `explicar`: la regla y la trampa de la unidad del foco desde el contenido exportado (la respuesta correcta de un ítem solo si `respuestaDada` viene).
+
+Con (e), entre la línea 1 y la 2 entran los resultados recuperados (AC-73): hasta `HARNESS_RAG_TOP_K` líneas, recuerdos primero (`hace <n> semanas: <MemoryText recortado ≤ 60 tokens>`, delimitado como no fiable) y luego fragmentos de contenido (`<ref> <titulo>: <extracto ≤ 60 tokens>`). Se recortan desde abajo como el resto; nunca suben el total por encima de `HARNESS_CONTEXT_TOKENS`, así que el modelo de coste no cambia.
 
 Nunca: el JSON de progreso, correos, ids de usuario, textos de writing o speaking.
 
@@ -229,8 +257,14 @@ Nunca: el JSON de progreso, correos, ids de usuario, textos de writing o speakin
 | `HARNESS_MAX_PROPOSALS_PENDING` | 3 | 1–5 | |
 | `PRICE_HARNESS_IN` / `PRICE_HARNESS_OUT` | 0.30 / 1.20 | ≥ 0 | USD por millón (tarifa punta de `deepseek-flash`, sin caché: siempre por encima del coste real). |
 | `HARNESS_LIVE_TESTS` | sin definir | `1` | Solo tests. |
+| `EMBEDDINGS_URL` | vacío | URL interna (`http://embeddings:80`) | Vacío = sin vectores: no se indexa y la búsqueda va por texto completo (AC-72). |
+| `EMBEDDINGS_MODEL` | `intfloat/multilingual-e5-small@614241f6` | texto | Etiqueta guardada en cada fila de vectores; debe coincidir con el contenedor. Cambiarla = reindexar en filas nuevas. |
+| `EMBEDDINGS_QUERY_TIMEOUT_MS` | 80 | 20–500 | Vectorizar la consulta; vencido → texto completo. |
+| `EMBEDDINGS_INDEX_TIMEOUT_MS` | 5000 | 500–30000 | Lote de indexado. |
+| `HARNESS_RAG_TOP_K` | 5 | 1–10 | N de AC-73 (recuerdos + fragmentos que llegan al modelo). |
+| `HARNESS_RAG_MIN_SIM` | 0.80 | 0–1 | Similitud coseno mínima; se calibra en la tarea 12.6 con las consultas de AC-68. |
 
-Fuera de rango, ausente o no numérico → defecto (AC-15). Topes de salida por llamada (constantes de `RunKind`): explicar 300 tokens, revisar_plan 200, ejercicios 600 (drill) / 900 (lectura, escucha).
+Fuera de rango, ausente o no numérico → defecto (AC-15). Topes de salida por llamada (constantes de `RunKind`): explicar 300 tokens, revisar_plan 200, ejercicios 600 (drill) / 900 (lectura, escucha), bienvenida 250.
 
 ## Modelo de coste (con los valores por defecto, tarifa punta, sin caché)
 
@@ -242,6 +276,7 @@ Fuera de rango, ausente o no numérico → defecto (AC-15). Topes de salida por 
 | revisar_plan | 1 llamada forzada: 1 150 (345) + 200 (240) = **585 µ$ ≈ 1,2 cr** | Con `leer_progreso` antes: **1 125 µ$ ≈ 2,3 cr** |
 | ejercicios (drill) | 1 llamada forzada: 1 150 (345) + 600 (720) = **1 065 µ$ ≈ 2,2 cr** | igual |
 | ejercicios (lectura/escucha) | 1 llamada forzada: 345 + 900 (1 080) = **1 425 µ$ ≈ 2,9 cr** | igual |
+| bienvenida | 1 llamada sin herramientas: sistema 250 + datos ≤ 300 = 550 (165) + salida 250 (300) = **465 µ$ ≈ 0,9 cr** | igual; una vez por estudiante y ruta |
 
 Fuera de la hora punta (la mayor parte del día) el coste es la mitad, y la caché de prefijos de DeepSeek abarata la segunda llamada. `CostModelTest` fija esta tabla: con los valores por defecto, el peor camino de cada tipo cabe en `HARNESS_MAX_CREDITS`. Las llamadas reales gated (tarea 11.2) miden el coste verdadero.
 
@@ -251,14 +286,14 @@ Contabilidad: una reserva por ejecución en `ai_usage` (`kind = 'harness'`, `mod
 
 Por qué dos y no más: todo lo que produce o recibe el alumno (respuestas, punto de partida, observaciones, propuestas, decisiones, ejercicios) es un **evento** con tipo y carga JSON validada; las consultas que hacen falta (por usuario, por tipo, por fecha; pendientes = propuestas sin decisión) las resuelve una tabla con dos índices únicos parciales. `harness_runs` va aparte porque es registro de operación (coste, motivos) con columnas que se agregan en el admin.
 
-Migraciones nuevas (Laravel, solo `create`, después de las siete base): `2026_11_20_000001_create_harness_runs_table`, `2026_11_20_000002_create_learner_events_table`.
+Migraciones nuevas (Laravel, solo `create`, después de las siete base): `2026_11_20_000001_create_harness_runs_table`, `2026_11_20_000002_create_learner_events_table`. Las de (e) van aparte (ver "(e) Memoria semántica"). Todas son **aditivas**: `up()` solo crea; `down()` no hace nada (ningún `DROP`, ni de estas tablas); los tests de esquema corren dentro de una transacción con `ROLLBACK` (decisión del dueño 2026-11-05).
 
 ```sql
 create table harness_runs (
   id                bigserial   primary key,
   user_id           uuid        not null references users(id) on delete cascade,
   usage_id          bigint,                                   -- ai_usage.id de la reserva (sin FK: cleanup-test borra ai_usage)
-  kind              text        not null check (kind in ('explicar','revisar_plan','ejercicios')),
+  kind              text        not null check (kind in ('explicar','revisar_plan','ejercicios','bienvenida')),
   track             text        not null,
   model             text        not null,
   started_at        timestamptz not null,
@@ -280,7 +315,7 @@ create table learner_events (
   id             bigserial   primary key,
   user_id        uuid        not null references users(id) on delete cascade,
   client_id      text,                                        -- id del cliente: idempotencia
-  kind           text        not null check (kind in ('respuesta','punto_partida','observacion','propuesta','decision','ejercicio')),
+  kind           text        not null check (kind in ('respuesta','punto_partida','observacion','propuesta','decision','ejercicio','bienvenida')),
   track          text        not null,
   ref            text,
   run_id         bigint      references harness_runs(id),
@@ -292,6 +327,7 @@ create table learner_events (
 create unique index learner_events_client_uq   on learner_events (user_id, client_id) where client_id is not null;
 create unique index learner_events_partida_uq  on learner_events (user_id, track) where kind = 'punto_partida';
 create unique index learner_events_decision_uq on learner_events (user_id, (payload->>'propuesta')) where kind = 'decision';
+create unique index learner_events_bienvenida_uq on learner_events (user_id, track) where kind = 'bienvenida';
 create index learner_events_user_idx on learner_events (user_id, kind, occurred_at desc);
 ```
 
@@ -300,23 +336,110 @@ create index learner_events_user_idx on learner_events (user_id, kind, occurred_
 | kind | payload | Origen |
 |---|---|---|
 | `respuesta` | `{ area, ok, dada? }` (`ref` en su columna) | cliente |
-| `punto_partida` | `{ stats, unidades, errores: { categoria: n }, diaPlan, diasHechos, racha, fechaExamen }` | servidor, una vez por ruta |
+| `punto_partida` | `{ diagnostico: { <area>: { aciertos, preguntas } } \| null, stats, unidades, errores: { categoria: n }, diaPlan, diasHechos, racha, fechaExamen }` | servidor, una vez por ruta, tras la subida/fusión de la primera entrada |
 | `observacion` | `{ categoria, texto }` | modelo (`registrar_observacion`) |
 | `propuesta` | `{ tipo, dia, minutos?, motivo, efecto }` | modelo + PHP (`efecto` lo redacta PHP) |
 | `decision` | `{ propuesta: "<id>", decision: aceptada\|rechazada }` | cliente |
 | `ejercicio` | `{ tipo, apunta_a, nivel, contenido }` | modelo |
+| `bienvenida` | `{ datos: WelcomeData, texto }` | PHP (`datos`) + modelo (`texto`), una vez por ruta |
 
-Garantías: ningún código hace `UPDATE`/`DELETE` sobre estas tablas (`AppendOnlyTest`); el único borrado es la cascada de `users` (AC-40); una decisión por propuesta (índice único); un punto de partida por ruta; reenvío del mismo lote sin duplicados (`on conflict do nothing`). Sin correo, IP ni textos largos (AC-41): `dada` ≤ 80, observación ≤ 200.
+Garantías: ningún código hace `UPDATE`/`DELETE`/`DROP` sobre estas tablas (`AppendOnlyTest`); el único borrado es la cascada de `users` (AC-40); una decisión por propuesta (índice único); un punto de partida por ruta; reenvío del mismo lote sin duplicados (`on conflict do nothing`). Sin correo, IP ni textos largos (AC-41): `dada` ≤ 80, observación ≤ 200.
+
+## (e) Memoria semántica (pgvector + embeddings locales)
+
+Decisión del dueño 2026-11-05: modelo de embeddings local en Docker + pgvector, sin proveedor de pago. ADR: `docs/adr/0004-memoria-semantica-pgvector.md`. La recuperación **no decide** (eso es la guía): trae ejemplos pertinentes para que el resumen sea más corto y más útil.
+
+### Piezas y versiones (fijadas y comprobadas el 2026-11-05)
+
+| Pieza | Elección | Por qué |
+|---|---|---|
+| Postgres local | `pgvector/pgvector:0.8.6-pg17-bookworm` (pgvector 0.8.6, Postgres 17; publicada 2026-08-13) en lugar de `postgres:17-alpine` | Misma versión mayor (17): el volumen `db-data` se reutiliza sin `initdb` ni volcado. La base se creó con `--locale=C`, así que el cambio musl → glibc no altera el orden de los índices de texto. 0.8.x trae `hnsw.iterative_scan` (búsqueda filtrada por usuario sin perder resultados). Se evita 0.8.7 (publicada hace 5 días). |
+| Postgres producción | Neon con la extensión `vector` (Neon soporta pgvector) | `create extension if not exists vector` en una migración aditiva; antes, consulta de solo lectura de la versión disponible (`select * from pg_available_extensions where name = 'vector'`), que debe ser ≥ 0.8.0. **[AUT]** |
+| Modelo | `intfloat/multilingual-e5-small`, revisión `614241f622f53c4eeff9890bdc4f31cfecc418b3` (licencia MIT) | Multilingüe (español e inglés en el mismo espacio: una duda en español encuentra contenido en inglés), 384 dimensiones, ~118 M parámetros, 512 tokens de entrada, CPU. Prefijos `query: ` / `passage: `. |
+| Servidor del modelo | `ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4` (TEI 1.9.4, publicada 2026-09-15); en VPS ARM, `cpu-arm64-1.9.4` | Servidor HTTP mantenido (`POST /embed`, `/health`), por lotes, sin código propio. Alternativa descartada: ONNX dentro de PHP (no hay extensión mantenida en la imagen de fpm). |
+
+Servicio nuevo `embeddings` en `docker/compose.yml` (lo edita la tarea 12.2, con autorización): `--model-id intfloat/multilingual-e5-small --revision 614241f622f53c4eeff9890bdc4f31cfecc418b3 --max-client-batch-size 64 --auto-truncate`, volumen `embeddings-model:/data` (el modelo se descarga una vez de Hugging Face; después `HF_HUB_OFFLINE=1`), **sin puertos publicados** (solo la red interna del stack), `mem_limit: 1536m`, `healthcheck` sobre `/health`; `api` depende de él con `required: false` (si no arranca, la API sigue y la búsqueda cae a texto completo).
+
+**Recursos y latencia frente a AC-70 (< 150 ms p95):** pesos ~470 MB en fp32; proceso TEI ~0,7–1 GB de RAM. Una consulta de 10–30 tokens se vectoriza en ~5–20 ms en 2 vCPU; HNSW con k = 5 sobre decenas de miles de vectores de 384 dimensiones responde en ~1–10 ms. Presupuesto: vectorizar ≤ 80 ms (`EMBEDDINGS_QUERY_TIMEOUT_MS`, vencido → texto completo), dos búsquedas ≤ 40 ms, resto margen. Son estimaciones: AC-70 se **mide** en la tarea 12.10. Modelos descartados: `paraphrase-multilingual-MiniLM-L12-v2` (mismo tamaño, peor recuperación), `multilingual-e5-base` (768 dimensiones, ~2,5× RAM y latencia), `bge-m3` (1 024 dimensiones, ~2,2 GB, no cabe holgado junto a fpm en un VPS pequeño).
+
+### Tablas (migraciones aditivas, solo `create`)
+
+`2026_11_20_000003_enable_pgvector` · `…000004_create_content_chunks_table` · `…000005_create_learner_memories_table` · `…000006_create_learner_events_fts_index`. `down()` vacío (sin `DROP`, tampoco de la extensión).
+
+```sql
+create extension if not exists vector;
+
+create table content_chunks (
+  id              bigserial   primary key,
+  track           text        not null,
+  content_version text        not null,                 -- sha256 de resources/content/<ruta>.json
+  model           text        not null,                 -- EMBEDDINGS_MODEL
+  ref             text        not null,                 -- gram:<unidad>, uoe:<…>, read:<…>, listen:<…>, vocab:<mazo>
+  tipo            text        not null check (tipo in ('gramatica','vocabulario','lectura','escucha','uoe')),
+  titulo          text        not null,
+  texto           text        not null,                 -- ≤ 1 200 caracteres, contenido público de la ruta
+  embedding       vector(384) not null,
+  tsv             tsvector    generated always as (to_tsvector('simple', titulo || ' ' || texto)) stored,
+  created_at      timestamptz not null default now()
+);
+create unique index content_chunks_uq   on content_chunks (track, content_version, model, ref);
+create index content_chunks_hnsw        on content_chunks using hnsw (embedding vector_cosine_ops) with (m = 16, ef_construction = 64);
+create index content_chunks_tsv         on content_chunks using gin (tsv);
+
+create table learner_memories (
+  id         bigserial   primary key,
+  user_id    uuid        not null references users(id) on delete cascade,
+  event_id   bigint      not null references learner_events(id) on delete cascade,
+  track      text        not null,
+  model      text        not null,
+  embedding  vector(384) not null,
+  created_at timestamptz not null default now()
+);
+create unique index learner_memories_uq on learner_memories (event_id, model);
+create index learner_memories_user_idx  on learner_memories (user_id, track);
+create index learner_memories_hnsw      on learner_memories using hnsw (embedding vector_cosine_ops) with (m = 16, ef_construction = 64);
+
+create index learner_events_fts on learner_events
+  using gin (to_tsvector('simple', coalesce(ref, '') || ' ' || coalesce(payload->>'dada', '') || ' ' || coalesce(payload->>'texto', '')))
+  where kind in ('respuesta', 'observacion');
+```
+
+Reglas: solo inserción (`AppendOnlyTest` las incluye); `learner_memories` guarda el vector y la referencia al evento, **no** el texto (AC-75, AC-41): el texto se recompone con `MemoryText` al recuperar. Otro modelo u otra versión del contenido = filas nuevas con otra etiqueta; las búsquedas filtran por `model` y versión. Las filas viejas se quedan (no hay borrado); su volumen es pequeño (contenido de tres rutas: miles de fragmentos). Si un día cambia la dimensión (otro modelo), hace falta una tabla o columna nueva por migración aditiva.
+
+### Indexado (AC-71)
+
+- **Contenido, una vez por versión.** `php artisan learner:index-content` (idempotente): por ruta, `version = sha256(<ruta>.json)`; si ya hay filas de `(track, version, model)`, no hace nada; si no, `ContentChunker` → lotes de 32 con rol `pasaje` → **una transacción** con `insert … on conflict do nothing` (una versión está entera o no está). Se ejecuta en el despliegue después de `migrate` y en el servicio `migrate` del perfil `local` (tarea 12.2). Sin el contenedor de embeddings, el comando falla con mensaje claro y no escribe nada.
+- **Memoria del estudiante, al guardar el evento y sin hacerle esperar.** `IngestEvents` y `RecordObservationTool` insertan el evento y programan `IndexLearnerMemories` con `dispatch(...)->afterResponse()` (con `QUEUE_CONNECTION=sync`, Laravel lo ejecuta tras enviar la respuesta: el estudiante no espera; sin colas ni Redis). Indexa los eventos nuevos (`respuesta` con `ok = false` y `observacion`) y, de paso, hasta 50 **pendientes** de ese usuario (anti-join de `learner_events` sin fila en `learner_memories` para el modelo actual, últimas 12 semanas). Si falla, no se escribe nada y el log dice solo el motivo (sin texto, AC-42): el siguiente lote lo reintenta. `php artisan learner:index-memories --limit=` sirve para recuperar atrasos o reindexar con otro modelo (manual).
+
+### Recuperación (AC-68, AC-69, AC-72, AC-73)
+
+`Application\Memory\Retriever::retrieve(RunContext, consulta, k)`:
+1. `EmbeddingPort::embed([consulta], consulta)` con `EMBEDDINGS_QUERY_TIMEOUT_MS`.
+2. `VectorSearch::content` (ruta activa, versión actual; si la versión actual aún no está indexada, la última indexada de esa ruta, con las refs filtradas contra `ContentIndex`) y `VectorSearch::memories` (solo `user_id` del contexto, AC-4). Consulta: `set local hnsw.iterative_scan = relaxed_order; set local hnsw.ef_search = 40;` + `order by embedding <=> $v limit k` con `where user_id = $1 and track = $2 and model = $3`.
+3. Une, descarta por debajo de `HARNESS_RAG_MIN_SIM`, ordena por similitud y deja `HARNESS_RAG_TOP_K`.
+4. Si el paso 1 o 2 falla (`EmbeddingUnavailable`, tiempo, `EMBEDDINGS_URL` vacío, error de la extensión) → `FullTextSearch`: `websearch_to_tsquery('simple', consulta)` sobre `content_chunks.tsv` y sobre el índice `learner_events_fts` del usuario; sin filas de contenido indexado para la ruta → la búsqueda literal de `ContentIndex` (por ref y título). Sin error para el estudiante; el paso queda en `harness_runs.steps` con `via: vector | texto | literal`.
+
+Usos: `SearchContentTool` (`buscar_contenido`, con `consulta`) y `ContextBuilder` (recuerdos y fragmentos del foco en `explicar` y `ejercicios`). No hay herramienta nueva: la lista blanca sigue siendo de seis (AC-10). La consulta del foco la compone PHP (título de la unidad + pregunta + respuesta dada), nunca el modelo.
+
+### Puertos y adaptadores
+
+| Puerto | Adaptadores | Por qué es puerto |
+|---|---|---|
+| `EmbeddingPort` | `TeiEmbeddingClient` (solo HTTP: `POST {EMBEDDINGS_URL}/embed` con `{"inputs": [...], "normalize": true, "truncate": true}`, timeout por llamada); `FakeEmbedding` en tests (vectores deterministas por bolsa de palabras con hash: textos que comparten palabras se parecen) | Los tests unitarios no pueden depender del contenedor; un segundo modelo se enchufa sin tocar la aplicación. |
+| `VectorSearch` | `PgVectorSearch` (SQL con pgvector); `InMemoryVectorSearch` en tests (coseno en PHP) | Probar `Retriever` y `ContextBuilder` sin base. |
+
+Sin puerto (un adaptador, probados contra Postgres real): `FullTextSearch`, `MemoryRepository`.
 
 ## Contratos de API
 
-Todos bajo sesión (`Authorization: Bearer`), mismo formato de error que el resto. Orden: `HARNESS_ENABLED` → sesión → entrada. CORS y `Cache-Control: no-store` como el resto.
+Todos bajo sesión (`Authorization: Bearer`), mismo formato de error que el resto. Orden: sesión → entrada; `HARNESS_ENABLED` solo se comprueba (primero) en `POST /api/harness/runs` y en la parte con modelo de la bienvenida (S-12). CORS y `Cache-Control: no-store` como el resto.
 
 | Método y ruta | Entrada | Respuesta |
 |---|---|---|
-| `GET /api/learner/estado` | — | `{ habilitado: true, aviso: { aceptado: false } }` (el aviso se guarda en el cliente; el servidor solo informa de que existe) |
+| `GET /api/learner/estado` | — | `{ agente: bool }` (`HARNESS_ENABLED`); el aviso de privacidad se guarda en el cliente, por cuenta |
 | `POST /api/learner/eventos` | `{ eventos: [{ id, track, area, ok, ref?, dada?, en }] }` ≤ 100, cuerpo ≤ 32 KB | `200 { aceptados, duplicados }` · `422 bad_events` con `{ indice, motivo }` del primero inválido (lote rechazado entero) |
-| `GET /api/learner/perfil?track=` | — | `{ perfil: LearnerProfile, siguientePaso: { accion, ref?, texto }, datosSuficientes }` |
+| `GET /api/learner/perfil?track=` | — | `{ perfil: LearnerProfile, siguientePaso: { accion, ref?, texto }, datosSuficientes }` — `perfil` trae `evolucion`, `fuertes` y `origen` (fuente de Mi seguimiento, AC-78) |
+| `POST /api/learner/bienvenida` | `{ track }` | `{ datos: WelcomeData, texto: string\|null, via: "modelo"\|"plantilla"\|"guardada" }` · 422 `sin_diagnostico`. Idempotente: si ya hay evento `bienvenida`, lo devuelve (`guardada`, 0 créditos); con el agente activo y la cuota disponible ejecuta `bienvenida`; si no, `texto: null` (AC-76) |
 | `GET /api/learner/propuestas?track=` | — | `{ pendientes: [Propuesta], aceptadas: [Propuesta] }` (aceptadas = capa del plan) |
 | `POST /api/learner/propuestas/{id}/decision` | `{ decision: "aceptada"\|"rechazada" }` | `{ ok: true }` · 404 `not_found` (no existe o no es suya) · 409 `ya_decidida` |
 | `GET /api/learner/ejercicios?track=` | — | `{ ejercicios: [{ id, tipo, apunta_a, nivel, creado }] }` |
@@ -355,12 +478,12 @@ Dependencias nuevas (versiones exactas, comprobadas en npm el 2026-11-05; justif
 ```
 frontend/src/features/
 ├── learner/
-│   ├── services/learnerService.ts     único sitio con fetch: estado, eventos, perfil, propuestas, decidir, ejercicios, exportar (usa apiUrl() y headers() de src/scripts/api.ts)
-│   ├── services/eventOutbox.ts        cola en localStorage["ruta-b1b2-eventos"] (≤ 500, FIFO), lotes de 100, envío al volver la red / al iniciar sesión
+│   ├── services/learnerService.ts     único sitio con fetch: estado, eventos, perfil, bienvenida, propuestas, decidir, ejercicios, exportar (usa apiUrl() y headers() de src/scripts/api.ts)
+│   ├── services/eventOutbox.ts        cola en localStorage["ruta-b1b2-eventos"], POR CUENTA (≤ 500, FIFO), lotes de 100, envío con red y sesión válida de esa cuenta
 │   ├── schemas/learner.schema.ts      Zod de todas las respuestas
 │   ├── types/learner.types.ts         z.infer de los esquemas
 │   ├── hooks/{useSession, useLearnerStatus, useProfile, useProposals, useDecideProposal, useExercises, useExercise}.ts
-│   ├── components/{LearnerIsland, ProfilePanel, NextStep, ProposalList, ProposalCard, ExerciseList, ExerciseHost, PlanAdjustments, PlanAdjustmentsIsland, PrivacyNotice}.tsx
+│   ├── components/{LearnerIsland, ProfilePanel, WeeklyEvolution, SourceList, NextStep, ProposalList, ProposalCard, ExerciseList, ExerciseHost, PlanAdjustments, PlanAdjustmentsIsland, PrivacyNotice}.tsx
 │   └── queryClient.ts                 un QueryClient compartido por las islas
 └── harness/
     ├── services/harnessService.ts     POST /api/harness/runs y lectura del SSE (parser puro + fetch)
@@ -371,13 +494,16 @@ frontend/src/features/
 ```
 
 Puntos de montaje (únicos cambios en vistas existentes):
-- `src/components/views/Account.astro`: `<LearnerIsland client:idle />` — perfil, siguiente paso, propuestas, ejercicios, exportar, aviso.
+- Mi seguimiento: `<LearnerIsland client:idle />` — perfil con evolución semanal y origen de cada dato, siguiente paso, propuestas, ejercicios, exportar, aviso. Dónde se monta (vista nueva "Mi seguimiento" o sección de `Account.astro`) lo decide el dueño en `landing-y-acceso` (su pregunta 4); la isla es la misma en los dos casos.
+- Bienvenida: el paso 3 del onboarding de `landing-y-acceso` (su fase 8) llama a `POST /api/learner/bienvenida` si hay red, sesión, agente activo y aviso aceptado; con `texto` lo muestra, si no pinta su plantilla (`bienvenida.ts`) con los mismos `datos`.
 - `src/components/views/Plan.astro`: `<PlanAdjustmentsIsland client:idle />` — ajustes aceptados del día abierto (la "capa", AC-31).
-- `src/scripts/progress.ts`: `bump(area, ok, ref?, dada?)` añade una línea que llama a `eventOutbox.registrar()` solo si hay sesión y el harness está habilitado (estado en memoria). `gradeCard` pasa su ref; `views/grammar.ts:132` y `views/plan.ts:90` pasan `gram:<unidad>:<i>` y la opción elegida. El resto de llamadas siguen sin ref (eventos por área).
+- `src/scripts/progress.ts`: `bump(area, ok, ref?, dada?)` añade una línea que llama a `eventOutbox.registrar()` si hay una cuenta en el dispositivo (`ruta-b1b2-cuenta` de `cuenta-local.ts`), **también sin conexión o con la sesión caducada** (AC-79); no depende de `HARNESS_ENABLED` (S-12). `gradeCard` pasa su ref; `views/grammar.ts:132` y `views/plan.ts:90` pasan `gram:<unidad>:<i>` y la opción elegida. El resto de llamadas siguen sin ref (eventos por área).
 - Superficie de TUT ("Explícamelo"): en su transporte, si hay sesión y harness habilitado y es la **primera** pregunta del tema, usa `harnessService` con `explicar`; si falla o no está, el `explain` de siempre (AC-27).
 - `ExerciseHost` monta un ejercicio generado con el reproductor existente. Si el reproductor de drills/lecturas/escucha no se puede llamar desde fuera, la tarea 10.6 lo extrae a una función exportada **sin cambiar su comportamiento** (es el único refactor de código vanilla; si no es posible, se para y se decide).
 
-Reglas: sin sesión no se monta nada ni se hace ninguna petición (`enabled: isSignedIn()` en todas las queries; `useSession` sobre `api.onSession`) → AC-3. Estados: carga, vacío ("aún no hay datos suficientes"), error, deshabilitado, foco visible, anuncios con `anunciar()`, tokens de color de `global.css` (sin colores nuevos), 320 px sin desplazamiento horizontal, teclado completo (AC-24, AC-44). Los tests de cliente (`node:test`) cubren lo puro: parser SSE, esquemas Zod, outbox (deduplicación, tope, reintentos), `useSession` no; los componentes se verifican en navegador.
+Claves por cuenta (AC-79, `landing-y-acceso` AC-20): `ruta-b1b2-eventos` y `ruta-b1b2-aviso-harness` se añaden a `CLAVES_POR_CUENTA` de `cuenta-local.ts`; la de la cuenta activa va sin sufijo y, al entrar otra cuenta, `cuenta-local` las archiva como `…@<id>` igual que el progreso. Además cada evento de la cola lleva `cuenta` y el outbox solo envía los de la cuenta de la sesión actual: aunque fallara el archivado, nunca se mandan eventos de A con la sesión de B.
+
+Reglas: sin sesión válida no se hace ninguna petición (`enabled: isSignedIn()` en todas las queries; `useSession` sobre `api.onSession`); sin red, nada (los eventos esperan); con el agente apagado no se montan sus puntos de entrada → AC-3. Estados: carga, vacío ("aún no hay datos suficientes"), error, deshabilitado, foco visible, anuncios con `anunciar()`, tokens de color de `global.css` (sin colores nuevos), 320 px sin desplazamiento horizontal, teclado completo (AC-24, AC-44). Los tests de cliente (`node:test`) cubren lo puro: parser SSE, esquemas Zod, outbox (deduplicación, tope, reintentos, cuenta), `useSession` no; los componentes se verifican en navegador.
 
 ## Plan de tests (criterio → test)
 
@@ -386,8 +512,8 @@ Backend en `backend/tests/{Unit,Feature}/Learner/…`; front en `frontend/tests/
 | AC | Test |
 |---|---|
 | 1 | `Feature/Learner/AuthTest`: cada endpoint sin sesión 401, caducada 401, bloqueado 403; sin filas nuevas ni llamada al `FakeChatModel` |
-| 2 | `Feature/Learner/DisabledTest`: `HARNESS_ENABLED=false` → 503 `harness_off` en todos; front: sin estado habilitado no se monta nada |
-| 3 | Front: `eventOutbox.test` (sin sesión no encola); verificación en navegador sin cuenta: ninguna petición nueva (pestaña de red) |
+| 2 | `Feature/Learner/DisabledTest`: `HARNESS_ENABLED=false` → 503 `harness_off` en `/api/harness/runs`; eventos, perfil, exportar y bienvenida (con `texto: null`) siguen respondiendo; front: con `agente:false` no se montan los puntos de entrada del agente |
+| 3 | Front: `eventOutbox.test` (sin red no envía; sin cuenta en el dispositivo no encola); verificación en navegador sin red y con el agente apagado: ninguna vista rota ni error nuevo; landing: cero peticiones a `/api/learner/` y `/api/harness/` (lo comprueba también `landing-y-acceso`) |
 | 4 | `Feature/Learner/IsolationTest`: dos usuarios, cada endpoint y cada herramienta; ninguna lectura/escritura cruzada |
 | 5 | `Unit/Learner/RunLoopTest::max_pasos` (modelo que pide herramientas sin parar) |
 | 6 | `RunLoopTest::tiempo` (modelo lento con `FrozenClock`; resultado parcial válido conservado) |
@@ -427,10 +553,22 @@ Backend en `backend/tests/{Unit,Feature}/Learner/…`; front en `frontend/tests/
 | 40 | `Feature/Learner/CascadeTest` (borrar el usuario borra sus filas; nada más) |
 | 41 | `Feature/Learner/NoPiiTest` (columnas y cargas sin correo/IP; recortes ≤ 80/200) |
 | 42 | `Feature/Learner/LogsTest` (log capturado sin token, texto del estudiante ni prompts) |
-| 43 | `Feature/Database/HarnessMigrationTest` (solo `create`; las siete base intactas; `SchemaParityTest` sigue verde) |
+| 43 | `Feature/Database/HarnessMigrationTest` (solo `create`, `down()` sin `DROP`; las siete base intactas; `SchemaParityTest` sigue verde) |
 | 44 | Navegador (10.9) + `design:accessibility-review` |
 | 45 | `Unit/Learner/RunRequestTest` (modelo = `HARNESS_MODEL`, `thinking` desactivado, ningún otro proveedor) |
 | 46 | Suites verdes con simulado; `tests/Live` solo con `HARNESS_LIVE_TESTS=1` |
+| 68 | `Integration/Learner/SemanticSearchTest` (grupo `embeddings`, Docker con TEI real, sin coste): conjunto fijo de ~20 consultas en español e inglés → la ref esperada entre los 5 primeros en ≥ 90 % |
+| 69 | `Feature/Learner/MemoryIsolationTest` (dos usuarios con recuerdos casi iguales: cada uno solo recupera los suyos) + `Unit/Learner/RetrieverTest` con `FakeEmbedding` e `InMemoryVectorSearch` |
+| 70 | `Performance/RetrievalLatencyTest` (grupo `perf`, Docker, base `ruta_test`): tres rutas indexadas, 10 000 recuerdos para un usuario y 50 000 de otros; 200 consultas; p95 < 150 ms; cero llamadas al `ChatModel` |
+| 71 | `Feature/Learner/IndexContentTest` (segunda ejecución no inserta nada; versión nueva = filas nuevas; fallo a mitad → ninguna fila) + `IndexMemoriesTest` (la ingesta responde antes de indexar; fallo del embedder → evento guardado, sin memoria; siguiente lote la crea) |
+| 72 | `Unit/Learner/RetrieverTest::caida_a_texto` (embedder caído, tiempo vencido, URL vacía) + `Feature/Learner/FullTextFallbackTest` |
+| 73 | `ContextBuilderTest::rag` (≤ `HARNESS_RAG_TOP_K` y dentro de `HARNESS_CONTEXT_TOKENS`) |
+| 74 | `Unit/Learner/TeiEmbeddingClientTest` (URL de config, cuerpo, timeout) + `Architecture/NoExternalEmbeddingsTest` (ningún otro cliente HTTP en `Learner`) |
+| 75 | `Feature/Database/MemoryMigrationTest` (extensión, columnas, HNSW, FKs en cascada; `learner_memories` sin columna de texto; dentro de transacción con `ROLLBACK`) + `AppendOnlyTest` ampliado |
+| 76 | `Unit/Learner/WelcomeTest` + `WelcomeGoldenTest` (fixture de `bienvenida.ts`) + `Feature/Learner/WelcomeEndpointTest` (modelo, plantilla, guardada sin gasto, 422 sin diagnóstico, agente apagado) |
+| 77 | `StartingPointTest::diagnostico` (solo diagnóstico; diagnóstico + progreso subido) |
+| 78 | `ProfileDeriverTest::evolucion` y `::origen` + `Feature/Learner/ProfileEvolutionTest` |
+| 79 | Front `event-outbox.test` (sin red y sesión caducada encola; otra cuenta no envía lo de la anterior; claves en `CLAVES_POR_CUENTA`) + navegador (`landing-y-acceso` `ui/salir-y-otra-cuenta.spec`) |
 
 ## Qué NO hacemos
 
@@ -442,7 +580,11 @@ Backend en `backend/tests/{Unit,Feature}/Learner/…`; front en `frontend/tests/
 - Ni un "motor de agentes" genérico, ni registro dinámico de herramientas: seis clases y una tabla fija por tipo de ejecución.
 - Ni validador JSON Schema completo: el subconjunto que usamos.
 - Ni el modelo que razona, ni otro proveedor.
-- Ni React en las vistas existentes más allá de los dos puntos de montaje.
+- Ni React en las vistas existentes más allá de los puntos de montaje (Mi seguimiento y Plan).
+- Ni colas, Redis ni workers para el indexado: `afterResponse()` y reintento en el siguiente lote.
+- Ni herramienta nueva para la memoria: la recupera PHP y la mete en el resumen.
+- Ni proveedor de embeddings de pago, ni modelo de chat local.
+- Ni instantáneas del perfil ni de la evolución: se calculan al pedirlas.
 
 ## Cambios respecto al spec
 
@@ -460,6 +602,8 @@ Backend en `backend/tests/{Unit,Feature}/Learner/…`; front en `frontend/tests/
 | AC-31 | La capa de ajustes aceptados vive en `learner_events` y la pinta una isla en el Plan; no se escribe en `progress` | No toca `state.ts`, `sync.ts` ni la fusión; clientes viejos intactos por construcción. |
 | AC-43 | Tablas nuevas por migración de Laravel (solo `create`), no en `db/schema.sql` | El esquema base queda congelado como espejo de producción. |
 | AC-45 | `deepseek-flash` sin razonamiento (`HARNESS_MODEL`) | Es el modelo ligero actual de DeepSeek; `deepseek-chat` ya no aparece en su lista. |
+| AC-71 | "Sin hacerle esperar" = `afterResponse()` en el mismo worker de fpm; "se reintenta" = el siguiente lote del usuario recoge los pendientes (no hay cola) | `QUEUE_CONNECTION=sync` y sin Redis (backend-separado); no hace falta más. |
+| AC-72 | Si además no hay contenido indexado de la ruta, la búsqueda cae a la literal de `ContentIndex` | Un despliegue sin el indexado hecho no deja `buscar_contenido` vacío. |
 
 ## Riesgos
 
@@ -469,6 +613,12 @@ Backend en `backend/tests/{Unit,Feature}/Learner/…`; front en `frontend/tests/
 - **Formato de refs** (`gram:<unidad>:<i>`, mazos, Use of English) depende de cómo guarda hoy el progreso; se fija en la tarea 3.1 con el contenido exportado real.
 - **Concurrencia de workers fpm**: cada ejecución ocupa uno ≤ 45 s.
 - **Privacidad**: el resumen va a DeepSeek; aviso explícito (S-6).
+- **RAM del VPS**: TEI añade ~1 GB. Mitigación: `mem_limit`; si no cabe, `EMBEDDINGS_URL` vacío y el harness funciona con texto completo (AC-72).
+- **Arquitectura del VPS**: la imagen `cpu-1.9.4` es x86-64; en ARM se usa `cpu-arm64-1.9.4`. Se comprueba al elegir el VPS.
+- **Descarga del modelo**: la primera vez TEI baja ~470 MB de Hugging Face (solo pesos, ningún dato). Revisión fijada; después, modo sin red.
+- **Búsqueda filtrada en HNSW**: con muchos usuarios, filtrar por `user_id` puede devolver menos de k resultados. Mitigación: `hnsw.iterative_scan` (pgvector ≥ 0.8); si AC-70 falla, plan B medido en 12.10: búsqueda exacta por usuario sobre `learner_memories_user_idx` (≤ 10 000 vectores).
+- **Cambio de imagen de la base local**: misma versión mayor y `--locale=C`; aun así se hace con copia previa (`pg_dump`) y autorización (12.1).
+- **pgvector en Neon**: versión disponible a comprobar antes de migrar en producción (12.13).
 
 ## Decisiones por defecto revisables
 
@@ -483,3 +633,9 @@ Backend en `backend/tests/{Unit,Feature}/Learner/…`; front en `frontend/tests/
 | H-7 | Umbrales de perfil (60 días, 2 000 eventos, N = 3 en 14 días, 60 % unidad débil, bandas 50/75 %) | Ajustar con datos reales |
 | H-8 | Primera explicación por harness, repreguntas por TUT | Todas por harness |
 | H-9 | Ref solo en drills de gramática y tarjetas al principio | Refs en todas las vistas (más cambios en vanilla) |
+| H-10 | `multilingual-e5-small` (384) en TEI `cpu-1.9.4` | `multilingual-e5-base` (768) si la calidad de AC-68 no llega |
+| H-11 | N = 5, similitud mínima 0,80 (a calibrar) | Otros valores por entorno |
+| H-12 | HNSW `m = 16`, `ef_construction = 64`, `ef_search = 40`, `iterative_scan = relaxed_order` | Búsqueda exacta por usuario si AC-70 lo pide |
+| H-13 | Memoria = errores (`respuesta` fallada) y observaciones | Añadir aciertos o ejercicios generados |
+| H-14 | `HARNESS_ENABLED` apaga solo el agente (S-12) | Una variable aparte para los datos del alumno |
+| H-15 | Bienvenida guardada solo si la redactó el modelo | Guardar también la de plantilla (no se volvería a intentar con modelo) |
