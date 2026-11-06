@@ -31,5 +31,10 @@
         <env name="DATABASE_URL" value="postgresql://ruta:ruta@db:5432/ruta_test" force="true"/>
         <env name="QUEUE_CONNECTION" value="sync" force="true"/>
         <env name="SESSION_DRIVER" value="array" force="true"/>
+        <!-- Las variables del contenedor llegan también en $_SERVER, que Laravel lee antes que $_ENV;
+             <env force> no lo toca, así que sin estas líneas los tests irían contra la base ruta. -->
+        <server name="APP_ENV" value="testing" force="true"/>
+        <server name="DB_CONNECTION" value="pgsql" force="true"/>
+        <server name="DATABASE_URL" value="postgresql://ruta:ruta@db:5432/ruta_test" force="true"/>
     </php>
 </phpunit>
