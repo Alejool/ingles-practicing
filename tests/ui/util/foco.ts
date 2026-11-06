@@ -20,13 +20,17 @@ export async function recorridoTab(page: Page, maximo = 60): Promise<string[]> {
   const paradas: string[] = [];
   for (let i = 0; i < maximo; i++) {
     await page.keyboard.press("Tab");
-    const parada = await page.evaluate(() => {
+    const parada = await page.evaluate((primera) => {
       const el = document.activeElement;
       if (!el || el === document.body) return null;
+      const marca = "data-recorrido-tab";
+      if (!primera) document.querySelectorAll(`[${marca}]`).forEach((n) => n.removeAttribute(marca));
+      if (el.hasAttribute(marca)) return null;
+      if (!primera) el.setAttribute(marca, "");
       const nombre = el.getAttribute("aria-label") ?? el.textContent?.trim().slice(0, 40) ?? "";
       return `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""} "${nombre}"`;
-    });
-    if (parada === null || parada === paradas[0]) break;
+    }, paradas.length > 0);
+    if (parada === null) break;
     paradas.push(parada);
   }
   return paradas;
