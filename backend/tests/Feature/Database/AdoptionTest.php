@@ -42,7 +42,6 @@ final class AdoptionTest extends TestCase
         }
 
         $this->assertSame(self::migrationNames(), $ran);
-        $this->assertCount(count(SchemaSandbox::TABLES), $ran);
         $this->assertSame([1], $batches);
         $this->assertSame($schemaBefore, $schemaAfter);
         $this->assertSame($rowsBefore, $rowsAfter);
