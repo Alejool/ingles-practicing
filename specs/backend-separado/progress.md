@@ -141,3 +141,39 @@ Hallazgos de code-review/testing sobre L3 (`.agentflow/TASKS.md`), devueltos al 
 - Front: `npm test` 94/0, `npm run test:plan` correcto, `npm run check` 0/0/0.
 - Tareas: 2.1, 2.2, 2.4–2.9 `[x]`. 2.3 queda `[ ]`: el contrato de health pasa contra Laravel, pero no se vio en rojo antes (el controlador ya existía). 2.10 sigue abierta: falta repetir la batería entera contra Node.
 - Comandos de esta fase, ahora con `--env-file docker/local.env` (ver cabecera de `docker/compose.yml`).
+
+## Punto de control 2.10 — 2026-11-05
+
+- Batería de contrato entera contra Node (`npm run contract:up` → `npm run test:contract` → `npm run contract:down`): **195/195 verdes**, 0 fallos, ~4,8 s. Stack `ruta-contract-node` abajo.
+- Contra Laravel (sesión anterior): `health` 3/3, `deepseek` 5/5, `not-found` 6/6 verdes; `cors` 0/14 rojo y anotado (todos sus casos usan endpoints de la fase 4).
+- 2.3 se deja `[ ]` a propósito (contrato verde contra Laravel, nunca visto en rojo). No bloquea: el comportamiento lo cubren el contrato y `HealthControllerTest`.
+
+## Fase 3 — Migraciones — 2026-11-05
+
+Restricción del dueño (`.agentflow/DECISIONS.md`, 2026-11-05): migraciones solo en el Postgres local (`ruta`, `ruta_test`); ningún `fresh`/`refresh`/`reset`/`wipe`, `DROP`, `TRUNCATE`, `DELETE` ni `UPDATE`. Por eso 3.1 y 3.3 no usan una base recreada: todo ocurre en un esquema con nombre único (`parity_a_…`, `parity_b_…`, `adopt_…`) dentro de una transacción que se deshace (el DDL de Postgres es transaccional). El migrador de Laravel corre dentro de esa transacción (anida con savepoints) y `Schema::hasTable` mira `current_schema()`, que sigue al `set local search_path`. Redacción de 3.1 y 3.3 en `tasks.md` actualizada.
+
+- 3.1 `SchemaParityTest` + `SchemaSandbox` (ayudante): compara tablas, columnas (tipo, precisión, nulo, defecto, orden), restricciones (`pg_get_constraintdef` y nombre), `indexdef` y secuencias, con el nombre del esquema sustituido por `<s>`. Excluye la tabla `migrations` y su secuencia. Rojo visto: esquema B vacío (sin migraciones). Un segundo caso comprueba que no queda ningún esquema `parity_*`/`adopt_*`.
+- 3.2 Siete migraciones `2026_11_05_00000{1..7}`, una por tabla, guarda `Schema::hasTable`, `down()` vacío comentado. DDL literal de `schema.sql` en las siete (no solo donde el constructor no llega): el constructor da `timestamp(0)` por defecto, `CURRENT_TIMESTAMP` en vez de `now()`, `'0'` en los booleanos y nombres de restricción propios (`*_unique`, `*_foreign`) en vez de los de Postgres (`*_key`, `*_fkey`). Las `alter table … add column if not exists` no se repiten: `return_to` y `cost_micros` van en la creación. Verde a la primera; la única diferencia que salió fue la secuencia de `migrations` (ruido del test, excluida).
+- 3.3 `AdoptionTest`: esquema creado con `schema.sql`, una fila en cada tabla, `php artisan migrate --force` → las siete registradas en el lote 1, descripción del esquema idéntica y recuento + `md5` de filas iguales. Escrito con las migraciones ya hechas; autocomprobación: sin la guarda de `users` falla con `relation "users" already exists`.
+- 3.4 Nada que implementar para 3.3. `backend/database/README.md` con la regla "solo se añaden migraciones; las base no se tocan" y la lista de comandos prohibidos.
+- 3.5 y 3.6 **[AUT]**: abiertas, no ejecutadas (Neon / producción).
+
+### Hallado al verificar
+
+- **PHPUnit corría contra `ruta`, no `ruta_test`** (y con `APP_ENV=local`): las variables del contenedor llegan en `$_SERVER`, que el repositorio de entorno de Laravel lee antes que `$_ENV`, y `<env force="true">` de PHPUnit solo toca `putenv` y `$_ENV`. Arreglo: `<server … force="true"/>` para `APP_ENV`, `DB_CONNECTION` y `DATABASE_URL` en `backend/phpunit.xml`. Test de guarda `tests/Feature/Database/TestDatabaseTest.php` (base `ruta_test`, entorno `testing`): rojo sin el arreglo, verde con él. Lo ejecutado antes en `ruta` no dejó nada (los tests de esta fase hacen `ROLLBACK`; los anteriores no escriben).
+- `db/schema.sql` no estaba en el contenedor (solo se monta `backend/`). Añadido `../db:/var/www/db:ro` a los volúmenes de la API en `docker/compose.yml`; `base_path('../db/schema.sql')` lo encuentra. También lo necesitará `op=schema` de admin (b.9).
+
+### Punto de control 3.7
+
+- PHPUnit: **107 passed (392 assertions)** en `ruta_test` (103 + `SchemaParityTest` 2, `AdoptionTest` 1, `TestDatabaseTest` 1).
+- `--profile local up -d --build --wait`: `migrate` sale con 0 y aplica las siete en la base local `ruta`; `/healthz` 200. Stack `ruta2` abajo. Contenedores `reyco-*` sin tocar.
+- Front: `npm test` 94/0, `npm run test:plan` correcto, `npm run check` 0/0/0, `npm run build:fast` correcto.
+### Corrección de revisión (code-review high) — 2026-11-05
+
+- Hallazgo: la guarda `Schema::hasTable` saltaba la migración entera en una base existente; `schema.sql` cura las bases antiguas (`alter table … add column if not exists return_to` / `cost_micros`, `create index if not exists`), las migraciones no. Una base anterior a esas columnas (Neon puede serlo) quedaba marcada como migrada sin `return_to`, `cost_micros` ni índices.
+- Test primero: `AdoptionTest::test_migrate_heals_a_legacy_database_like_schema_sql_does` — base antigua (`schema.sql` sin las dos `alter`, sin `cost_micros` en la creación y sin `ai_usage_ip_idx`; cada línea quitada se exige presente, así que si `schema.sql` cambia el test lo dice) con una fila en cada tabla; migrate debe dejarla con la misma descripción que `schema.sql` aplicado a otra base antigua, y recuento + `md5` de las columnas originales iguales. **Rojo** con las guardas: "Failed asserting that an array contains 'return_to'".
+- Arreglo: sin guarda; cada migración repite las sentencias idempotentes de `schema.sql` en su orden (`create table if not exists`, `alter … add column if not exists`, `create index if not exists`). Solo añade. Docblocks y `backend/database/README.md` describen el mecanismo nuevo.
+- `AdoptionTest` saca la lista de migraciones de `glob(database/migrations/*.php)` ordenado (y exige que sean siete). `SchemaSandbox` gana `applyLegacySchemaSql()` y `contentsOf(tabla, columnas)`.
+- PHPUnit en `ruta_test`: **108 passed (432 assertions)**. `SchemaParityTest` sigue verde (orden de columnas incluido: `return_to` queda al final, como con `schema.sql`).
+
+- Siguiente: 3.5 (comparación de solo lectura contra Neon) necesita al dueño; la fase 4 puede empezar sin ella, pero el plan dice que si 3.5 encuentra diferencias se paran las fases siguientes.

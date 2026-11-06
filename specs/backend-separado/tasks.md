@@ -53,7 +53,7 @@ Comandos de cada punto de control:
   - Archivos: `backend/**` (nuevo).
 - [x] 2.2 Docker: `docker/php/{Dockerfile, php.ini, www.conf}` (8.4.22-fpm-alpine, `pdo_pgsql`, `opcache`, `max_execution_time=0`, `output_buffering=Off`, `expose_php=Off`, `post_max_size=3M`), `docker/nginx/{Dockerfile, default.conf}` (etapa node que construye el front y exporta contenido; estáticos con las cabeceras del plan; `/api/` y `/healthz` a fpm sin búfer; `client_max_body_size 3m`; `fastcgi_read_timeout 600s`), `docker/compose.yml` (web, api, db, mailpit con tag fijo, `migrate` de un solo uso en perfiles `local`/`contract`, `fake-deepseek` en perfil `contract`). Verificación: `docker compose -f docker/compose.yml up` sirve el front en `:8081`.
   - Archivos: `docker/**`.
-- [ ] 2.3 Test (falla primero): contrato `health.test.mts` contra `:8081` (falla: 404).
+- [ ] 2.3 Test (falla primero): contrato `health.test.mts` contra `:8081` (falla: 404). Queda abierta a propósito: el contrato pasa contra Laravel, pero no se vio en rojo (el controlador ya existía); ver `progress.md`.
 - [x] 2.4 Implementar: `HealthController` y su línea en `routes/api.php` (ruta `/healthz` fuera del prefijo `api`). El contrato de health pasa contra Laravel.
   - Archivos: `backend/app/Http/Controllers/HealthController.php`, `backend/routes/api.php`, `backend/bootstrap/app.php`.
 - [x] 2.5 Test: arquitectura. `DomainIsFrameworkFreeTest` (recorre `src/*/Domain/**/*.php`: ni `Illuminate\`, ni `Laravel\`, ni `App\`, ni fachadas) y `AppendOnlyTest` (busca `update`/`delete` sobre tablas declaradas solo-inserción; de momento lista vacía). Cada uno con un caso de autocomprobación que demuestra que detecta una violación (archivo de ejemplo en `tests/fixtures/`).
@@ -65,20 +65,20 @@ Comandos de cada punto de control:
 - [x] 2.8 Test (falla primero): `Shared\Domain` — `ClientIp::fromProxy` con los casos de `tests/client-ip.test.mts`; `Hashing::sha256Hex`, `hashIp` y `anonPulse` iguales a valores calculados con el código Node (fixture); `randomToken` (43 caracteres base64url); `DeviceId`; `IsoInstant::fromPg` (UTC, ms, `Z`).
   - Archivos: `backend/tests/Unit/Shared/*.php`, `backend/tests/fixtures/hashes.json` (generado por un script Node de una línea, documentado en el test).
 - [x] 2.9 Implementar: `Shared\Domain\{DomainError, Clock, ClientIp, Hashing, DeviceId, IsoInstant}`, `Shared\Infrastructure\SystemClock`.
-- [ ] 2.10 [C] Punto de control: PHPUnit verde; contratos `health`, `deepseek`, `not-found`, `cors` (solo preflight de rutas ya existentes) verdes contra Laravel; el resto rojo y anotado; batería verde contra Node.
+- [x] 2.10 [C] Punto de control: PHPUnit verde; contratos `health`, `deepseek`, `not-found`, `cors` (solo preflight de rutas ya existentes) verdes contra Laravel; el resto rojo y anotado; batería verde contra Node.
 
 ## Fase 3 — Migraciones
 
-- [ ] 3.1 Test (falla primero): `SchemaParityTest` — base A desde `db/schema.sql` (con `psql` en el contenedor), base B con `migrate:fresh`; columnas (tipo, nulo, defecto), restricciones e `indexdef` idénticos.
+- [x] 3.1 Test (falla primero): `SchemaParityTest` — todo dentro de una transacción que se deshace (el DDL de Postgres es transaccional; nada se recrea, vacía ni borra): esquema A con nombre único y `db/schema.sql` (por PDO; `db/` montado de solo lectura en el contenedor), esquema B con nombre único y `php artisan migrate`; columnas (tipo, nulo, defecto), restricciones, `indexdef` y secuencias idénticos; al final `ROLLBACK`.
   - Archivos: `backend/tests/Feature/Database/SchemaParityTest.php`.
-- [ ] 3.2 Implementar: siete migraciones `2026_11_05_000001…7` (`users`, `login_tokens`, `sessions`, `ai_usage`, `progress`, `shared_readings`, `pulse`), una por tabla, cada una con guarda `Schema::hasTable` y `down()` vacío comentado; DDL literal donde el constructor no llega.
+- [x] 3.2 Implementar: siete migraciones `2026_11_05_000001…7` (`users`, `login_tokens`, `sessions`, `ai_usage`, `progress`, `shared_readings`, `pulse`), una por tabla, cada una con las mismas sentencias idempotentes de `schema.sql` en el mismo orden (`create table if not exists`, `alter table … add column if not exists`, `create index if not exists`; sin guarda `Schema::hasTable`, que dejaba sin curar las bases antiguas — revisión de código) y `down()` vacío comentado; DDL literal.
   - Archivos: `backend/database/migrations/*.php`.
-- [ ] 3.3 Test: adopción — sobre una base creada con `schema.sql` y con filas en todas las tablas, `php artisan migrate` registra las siete como ejecutadas, no cambia el esquema (mismo resultado de 3.1) y deja recuentos y sumas de comprobación de filas iguales.
+- [x] 3.3 Test: adopción — en una transacción que se deshace: esquema con nombre único creado con `schema.sql` y con filas en todas las tablas; `php artisan migrate` registra las siete como ejecutadas, no cambia el esquema (mismo resultado de 3.1) y deja recuentos y sumas de comprobación de filas iguales. Segundo caso: base antigua (sin `return_to`, `cost_micros` ni `ai_usage_ip_idx`) con filas → migrate la deja igual que `schema.sql` sobre la misma base antigua y las filas (columnas originales) no cambian.
   - Archivos: `backend/tests/Feature/Database/AdoptionTest.php`.
-- [ ] 3.4 Implementar lo que falte para 3.3 (si algo falla) y documentar en `backend/database/README` la regla "solo se añaden migraciones; las base no se tocan".
+- [x] 3.4 Implementar lo que falte para 3.3 (si algo falla) y documentar en `backend/database/README` la regla "solo se añaden migraciones; las base no se tocan".
 - [ ] 3.5 **[AUT]** Comparación de solo lectura contra Neon: `pg_dump --schema-only` (o las consultas del test 3.1) contra producción y diff con la base A. Lo ejecuta el dueño o se ejecuta con su OK; resultado en `progress.md`. Si hay diferencias, se paran las fases siguientes y se decide.
 - [ ] 3.6 **[AUT]** (Se ejecuta en el despliegue, no en esta feature.) `php artisan migrate --force` contra producción crea la tabla `migrations` y marca las siete. Queda escrito en `DESPLIEGUE.md` como paso con autorización.
-- [ ] 3.7 [C] Punto de control: comandos; `SchemaParityTest` y `AdoptionTest` verdes.
+- [x] 3.7 [C] Punto de control: comandos; `SchemaParityTest` y `AdoptionTest` verdes.
 
 ## Fase 4 — Contextos en tres lotes paralelos
 
