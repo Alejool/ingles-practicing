@@ -13,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 final class ApiJson
 {
-    public const ENCODE_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR;
+    public const ENCODE_FLAGS = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR;
 
     /**
      * Lista de `ALLOWED_ORIGINS`; sin definir o vacía, `*`.

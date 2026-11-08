@@ -3,6 +3,7 @@
 namespace App\Http\Support;
 
 use JsonException;
+use Ruta\Shared\Domain\JsString;
 
 /**
  * Lee un cuerpo JSON como `readJson` de la API Node: el tope se mide en unidades
@@ -32,8 +33,6 @@ final class JsonBody
     /** Longitud en unidades UTF-16: cada carácter fuera del plano básico cuenta dos. */
     public static function units(string $text): int
     {
-        $astral = preg_match_all('/[\x{10000}-\x{10FFFF}]/u', $text);
-
-        return mb_strlen($text, 'UTF-8') + ($astral === false ? 0 : $astral);
+        return JsString::length($text);
     }
 }

