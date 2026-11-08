@@ -20,3 +20,6 @@ backups/*.gz
 # Salida de la suite de interfaz (Playwright)
 /test-results/
 /playwright-report/
+
+# Índice de contenido para el backend (npm run content:export; se genera en el build)
+/backend/resources/content/

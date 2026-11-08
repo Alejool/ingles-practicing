@@ -20,6 +20,7 @@
     "test:ui": "playwright test",
     "test:plan": "node --experimental-strip-types --no-warnings scripts/validar-plan.mts",
     "plan:export": "node --experimental-strip-types --no-warnings scripts/exportar-plan.mts",
+    "content:export": "node --experimental-strip-types --no-warnings scripts/exportar-contenido.mts",
     "test:contract": "node --experimental-strip-types --no-warnings --test \"tests/contract/*.test.mts\"",
     "contract:up": "docker compose -p ruta-contract-node -f tests/contract/compose.node.yml up -d --build --wait",
     "contract:down": "docker compose -p ruta-contract-node -f tests/contract/compose.node.yml down"
