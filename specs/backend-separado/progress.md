@@ -177,3 +177,53 @@ Restricción del dueño (`.agentflow/DECISIONS.md`, 2026-11-05): migraciones sol
 - PHPUnit en `ruta_test`: **108 passed (432 assertions)**. `SchemaParityTest` sigue verde (orden de columnas incluido: `return_to` queda al final, como con `schema.sql`).
 
 - Siguiente: 3.5 (comparación de solo lectura contra Neon) necesita al dueño; la fase 4 puede empezar sin ella, pero el plan dice que si 3.5 encuentra diferencias se paran las fases siguientes.
+
+## Fase 4 — Contextos (lotes a, b, c) — 2026-11-06/07
+
+Stack de contrato Laravel: `APP_URL=http://localhost:8080 API_ENV_FILE=../tests/contract/contract.env docker compose --env-file docker/local.env -f docker/compose.yml --profile contract up -d --build --wait` (`APP_URL` hay que exportarlo: el `environment:` de compose gana al `env_file` y el contrato espera `:8080`). Batería: `BASE_URL=http://localhost:8081 CONTRACT_DATABASE_URL=postgresql://ruta:ruta@localhost:5435/ruta MAILPIT_URL=http://localhost:8027 FAKE_DEEPSEEK_URL=http://localhost:8791 npm run test:contract`.
+
+### Preparación
+- `ruta_test` no tenía tablas (las fases 2–3 usan esquemas propios dentro de transacciones). Se aplicaron las siete migraciones con `php artisan migrate --force` contra `ruta_test` local (aditivo, autorizado). Los Feature nuevos usan `DatabaseTransactions`: no queda nada escrito.
+- `phpunit.xml`: `LOG_CHANNEL=null` (env y server) y suite `Golden`.
+
+### Lote a — Auth + cuota (a.1–a.12 hechas)
+- Rojo visto: contratos `auth-request`, `auth-verify`, `auth-session`, `quota` 0/49 contra Laravel; después **49/49**.
+- Paridad: `ApiJson` sin `JSON_PRESERVE_ZERO_FRACTION` (`JSON.stringify(0.0)` es `0`; `ApiJsonTest` cambiado primero, rojo → verde). `Shared\Domain\JsString` (`String()`, `trim()`, `.length`, `.slice()` de JS) y `JsNumber` (`num()`, `Number()`); `DeviceId` y `JsonBody` los reutilizan.
+- `backend/tests/fixtures/login-email.json` generado con `_mail.mts` real: `MAIL_PROVIDER=resend MAIL_FROM= node --experimental-strip-types --input-type=module -e '…'` sustituye `fetch`, llama a `sendLoginLink` con dos `{link, minutes}` y guarda `{link, minutes, subject, text, html, from}` de lo que iría a Resend.
+- a.10, concurrencia: la carrera con dos conexiones necesita filas confirmadas y el `update … ok = false` de la perdedora sobre una fila confirmada; las reglas de datos no lo permiten. Se reproduce de forma determinista en una transacción: un listener de consultas mete la fila de la otra petición justo después de nuestro `insert` y antes de la segunda comprobación → perdemos, nuestra fila queda `ok=false` y se cobra 15/15. Si el dueño quiere la carrera real, hace falta una base desechable.
+- Los `.catch(() => {})` de Node (marca de uso de la sesión, limpieza de enlaces caducados, coste real al final del stream, anular tras un rechazo del proveedor) se registran en el log en vez de tragarse.
+
+### Lote b — Progress, Library, Pulse, Admin (b.1–b.10 hechas; b.11 `[~]`)
+- Rojo visto: 80/87 al empezar.
+- b.2: `scripts/exportar-contenido.mts` + `npm run content:export` → `backend/resources/content/{tracks,a2b1,b1b2}.json` (en `.gitignore`); `tests/exportar-contenido.test.mts` rojo → verde. Laravel lee las rutas válidas de `tracks.json` (`ContentTracks`; si falta, error claro al primer uso). **Pendiente**: los Dockerfile aún no ejecutan la exportación (en el stack local funciona porque `backend/` va montado).
+- b.5: `scripts/exportar-prompts.mts` genera `sanitize.json` (y desde c.1 `prompts.json`); `tests/fixtures-frescas.test.mts` rojo → verde.
+- Contratos: `progress` 24/24, `readings` 33/33, `pulse` 9/9; `admin` + `client-ip` + `body-limits` + `cors`: 97/101, los 4 rojos llamaban a `/api/ai/chat`.
+- Rarezas fijadas: `personas` de admin es bigint (Node: cadena; PDO: entero) → cadena en `AdminQueries::usageByDay`. Un `?after=` que no es fecha hace fallar la consulta → 500 `server_error`, como Node.
+- `op=cleanup-test` del contrato borra filas de prueba (`@smoke.test`, `smoke-%`, `Smoke…`) de la base `ruta` del Docker local: es el comportamiento del endpoint, no un borrado a mano. En PHPUnit va dentro de una transacción que se deshace.
+
+### Lote c — IA (c.1–c.6 hechas; c.7 `[~]`)
+- `PromptsGoldenTest` (35 casos de `buildMessages` + `isKind`) rojo → verde; `StreamChatTest` (10) y `ChatEndpointTest` (8) rojo → verde con `FakeChatModel`.
+- Encontrado: `StreamedResponse::setContent(null)` marca la respuesta como enviada y el cuerpo salía vacío; `ApiStreamedResponse` (cabeceras tal cual con `RawHeaderBag`, extraída de `ApiResponse`) desmarca `streamed` como hace Symfony.
+- nginx se queda las `X-Accel-*` del upstream y `X-Accel-Buffering: no` no llegaba: `fastcgi_pass_header X-Accel-Buffering;` en `docker/nginx/fastcgi-api.conf`. **Sin verificar**: Docker Desktop se cayó al reconstruir `web`.
+- Contrato `ai-chat` antes de esos dos arreglos: 27/31. Sin volver a ejecutar.
+
+### Seguridad (revisión 2026-11-07)
+1. `AdminRequest` acepta el token por `?token=`: lo hace Node, lo usa `public/admin.html:74` y lo fija el contrato `admin.test.mts`. Se mantiene por paridad. Propuesta posterior: `admin.html` con `Authorization: Bearer`, quitar la rama de query (test primero) y cambiar el contrato en la misma tarea.
+2. `MailLoginLinkSender`: el proveedor `log` (y MAIL_PROVIDER sin definir, cuyo defecto es `log`) falla fuera de local/testing (`RuntimeException` → 502 `mail_failed`) sin escribir el enlace. Diferencia deliberada con Node. Test `MailLoginLinkSenderTest::test_log_provider_fails_closed_outside_local_and_testing`, escrito antes; **sin ejecutar** (Docker caído; el PHP local no tiene mbstring).
+
+### Conflictos con landing-y-acceso (no se cambia nada aquí)
+- AC-21: la IA exigirá sesión → la cuota anónima (`anon_limit`, `QUOTA_ANON_*`) y `/api/ai/chat` sin cuenta dejan de usarse; hoy se portan por paridad.
+- AC-22: sin clave propia → los mensajes «usa tu propia clave en Ajustes» de la cuota quedan obsoletos; se cambian con su contrato en esa feature.
+
+### CP 4.C — sin cerrar (2026-11-07)
+- PHPUnit: última pasada completa (tras el lote a) 261/261; después, por partes, todo verde. Falta la pasada completa con `run --rm`.
+- Front: `npm test` 105/105, `npm run test:plan` correcto, `npm run check` 0/0/0. `tests/contract/` sin cambios.
+- Pendiente con Docker: PHPUnit completo, batería entera contra Laravel y contra Node, verificar `X-Accel-Buffering` y el test de `log`, parar los stacks.
+
+### Revisión de código — 2026-11-07 (con Docker de vuelta)
+- **Alta**: consumir el enlace mágico era un `select` y un `update` separados (dos verificaciones simultáneas abrían dos sesiones). Ahora `AuthRepository::consumeLoginToken` hace `update … set used_at = now() where token_hash = ? and used_at is null and expires_at > now() returning email, return_to`. Tests (rojo → verde): segundo consumo → null; caducado → null y sin marcar.
+- Cabeceras en Latin-1 como Node («día» → `d\xEDa`) en `RawHeaderBag::set` para toda la API; fuera el caso suelto de `ChatController`. `RawHeaderBagTest` rojo → verde.
+- `ChatStream`: se lee lo que queda en el búfer al acabar (un `usage` final sin `\n` se cobraba al precio estimado). Test rojo → verde.
+- `AdminQueries::deleteSmokeData`: quitado el `delete` de `ai_usage` con `kind = 'test'`, contenido en el siguiente (`device_id like 'smoke-%'`); ningún contador lo usa.
+- **No hecho**: mandar `deepseek-flash` al proveedor (DECISIONS 2026-11-05). El contrato congelado `ai-chat.test.mts` (líneas 123, 141, 153) exige que al proveedor llegue `deepseek-chat` / `deepseek-reasoner`, y la decisión no dice cómo pedir el razonamiento a `deepseek-flash`. Decide el dueño: o se cambia el contrato (y Node) en una tarea propia, o se deja para el corte.
+- PHPUnit (`run --rm`, `ruta_test`): **376/376**. Contrato contra Laravel, todos los archivos salvo `admin` (borra filas de `ruta` con `op=cleanup-test`; sin autorización en esta sesión): **186/186**, incluido `X-Accel-Buffering` a través de nginx.

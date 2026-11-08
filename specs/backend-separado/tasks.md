@@ -86,45 +86,45 @@ Los lotes a, b y c tocan archivos disjuntos salvo `routes/api.php` y `AppService
 
 ### Lote a — Auth + cuota
 
-- [ ] a.1 [P] Test (falla primero): contrato `auth-request`, `auth-verify`, `auth-session`, `quota` contra Laravel (rojos). Sin cambiar aserciones.
-- [ ] a.2 [P] Test (falla primero): `Auth\Domain\Email::fromRaw` (casos de `normaliseEmail`, mensaje exacto) y `ReturnTo` (casos de `safeReturnTo`: `APP_URL`, `ALLOWED_ORIGINS`, localhost con `APP_URL` local, ajeno, basura).
-- [ ] a.3 [P] Implementar: `Email`, `ReturnTo`.
-- [ ] a.4 [P] Test (falla primero): `LoginEmail` igual al fixture generado desde `_mail.mts` (asunto, texto, HTML); `MailLoginLinkSender` elige proveedor (`log` escribe el enlace en el log igual que hoy —proveedor solo de desarrollo; se señala a seguridad en 5.2—, `smtp` construye el DSN con `SMTP_*`, `resend`/`postmark` con `Http::fake`), `deliveryMode`.
+- [x] a.1 [P] Test (falla primero): contrato `auth-request`, `auth-verify`, `auth-session`, `quota` contra Laravel (rojos). Sin cambiar aserciones.
+- [x] a.2 [P] Test (falla primero): `Auth\Domain\Email::fromRaw` (casos de `normaliseEmail`, mensaje exacto) y `ReturnTo` (casos de `safeReturnTo`: `APP_URL`, `ALLOWED_ORIGINS`, localhost con `APP_URL` local, ajeno, basura).
+- [x] a.3 [P] Implementar: `Email`, `ReturnTo`.
+- [x] a.4 [P] Test (falla primero): `LoginEmail` igual al fixture generado desde `_mail.mts` (asunto, texto, HTML); `MailLoginLinkSender` elige proveedor (`log` escribe el enlace en el log igual que hoy —proveedor solo de desarrollo; se señala a seguridad en 5.2—, `smtp` construye el DSN con `SMTP_*`, `resend`/`postmark` con `Http::fake`), `deliveryMode`.
   - Archivos: `backend/tests/Unit/Auth/*.php`, `backend/tests/fixtures/login-email.json`.
-- [ ] a.5 [P] Implementar: `LoginLinkSender` (puerto), `MailLoginLinkSender`, `LoginEmail`.
-- [ ] a.6 [P] Test (falla primero) Feature: `RequestLoginLink` (orden de errores, límites por hora, `accounts_off`, `mail_failed`, limpieza oportunista), `VerifyLoginLink` (las tres salidas, upsert, sesión con `SESSION_DAYS`), `ResolveSession` (bloqueado 403, actualiza `last_used_at`/`last_seen_at` sin bloquear), `Logout`.
-- [ ] a.7 [P] Implementar: casos de uso de Auth, `AuthRepository`, `RequestLinkRequest`, controladores `RequestLinkController`, `VerifyLinkController`, `SessionController`, rutas.
-- [ ] a.8 [P] Test (falla primero): `Ai\Domain` — `Pricing::costeMicros` (modelo desconocido al más caro), `QuotaLimits` (lectura de env con defectos), `QuotaPolicy::creditosDe`, `creditosEstimados`, y `QuotaPolicy::check(medidas…)` con todos los mensajes de `comprobar()` (ritmo, global por créditos y por dinero, usuario diario/mensual, anónimo con/sin cuentas y ventana diaria). Casos de `tests/quota.test.mts` que no necesitan base.
-- [ ] a.9 [P] Implementar: `Pricing`, `QuotaLimits`, `QuotaPolicy`, `QuotaState`.
-- [ ] a.10 [P] Test (falla primero) Feature: `ReserveCredits` y `ReadQuota` con Postgres — casos de base de `tests/quota.test.mts`; dos reservas simultáneas con cuota para una (dos conexiones PDO intercaladas o dos procesos) → como mucho una pasa; la perdedora queda `ok=false`; `anular`.
-- [ ] a.11 [P] Implementar: `AiUsageRepository` (SQL literal de `_quota.mts`), `ReserveCredits` (comprobar sin escribir → insertar → comprobar contando la propia; acepta un número de créditos explícito para el harness y, por defecto, `creditosEstimados`), `ReadQuota`, `SettleUsage`.
-- [ ] a.12 [P] Implementar: `QuotaController` y ruta. Contratos `auth-*` y `quota` verdes contra Laravel.
+- [x] a.5 [P] Implementar: `LoginLinkSender` (puerto), `MailLoginLinkSender`, `LoginEmail`.
+- [x] a.6 [P] Test (falla primero) Feature: `RequestLoginLink` (orden de errores, límites por hora, `accounts_off`, `mail_failed`, limpieza oportunista), `VerifyLoginLink` (las tres salidas, upsert, sesión con `SESSION_DAYS`), `ResolveSession` (bloqueado 403, actualiza `last_used_at`/`last_seen_at` sin bloquear), `Logout`.
+- [x] a.7 [P] Implementar: casos de uso de Auth, `AuthRepository`, `RequestLinkRequest`, controladores `RequestLinkController`, `VerifyLinkController`, `SessionController`, rutas.
+- [x] a.8 [P] Test (falla primero): `Ai\Domain` — `Pricing::costeMicros` (modelo desconocido al más caro), `QuotaLimits` (lectura de env con defectos), `QuotaPolicy::creditosDe`, `creditosEstimados`, y `QuotaPolicy::check(medidas…)` con todos los mensajes de `comprobar()` (ritmo, global por créditos y por dinero, usuario diario/mensual, anónimo con/sin cuentas y ventana diaria). Casos de `tests/quota.test.mts` que no necesitan base.
+- [x] a.9 [P] Implementar: `Pricing`, `QuotaLimits`, `QuotaPolicy`, `QuotaState`.
+- [x] a.10 [P] Test (falla primero) Feature: `ReserveCredits` y `ReadQuota` con Postgres — casos de base de `tests/quota.test.mts`; dos reservas simultáneas con cuota para una (dos conexiones PDO intercaladas o dos procesos) → como mucho una pasa; la perdedora queda `ok=false`; `anular`.
+- [x] a.11 [P] Implementar: `AiUsageRepository` (SQL literal de `_quota.mts`), `ReserveCredits` (comprobar sin escribir → insertar → comprobar contando la propia; acepta un número de créditos explícito para el harness y, por defecto, `creditosEstimados`), `ReadQuota`, `SettleUsage`.
+- [x] a.12 [P] Implementar: `QuotaController` y ruta. Contratos `auth-*` y `quota` verdes contra Laravel.
 
 ### Lote b — Progress + Library + Pulse + Admin
 
-- [ ] b.1 [P] Test (falla primero): contratos `progress`, `readings`, `pulse`, `admin`, `client-ip`, `body-limits` contra Laravel (rojos).
-- [ ] b.2 [P] Exportación de contenido: test `node:test` (falla primero) de `scripts/exportar-contenido.mts` — `tracks.json` con los ids de `TRACK_META`; `<ruta>.json` con unidades, mazos, lecturas, escucha, días y referencias de ítems; determinista (dos ejecuciones, mismo resultado). Implementar el script y el script npm `content:export`. Sin tocar `src/data/`.
+- [x] b.1 [P] Test (falla primero): contratos `progress`, `readings`, `pulse`, `admin`, `client-ip`, `body-limits` contra Laravel (rojos).
+- [x] b.2 [P] Exportación de contenido: test `node:test` (falla primero) de `scripts/exportar-contenido.mts` — `tracks.json` con los ids de `TRACK_META`; `<ruta>.json` con unidades, mazos, lecturas, escucha, días y referencias de ítems; determinista (dos ejecuciones, mismo resultado). Implementar el script y el script npm `content:export`. Sin tocar `src/data/`.
   - Archivos: `scripts/exportar-contenido.mts`, `tests/exportar-contenido.test.mts`, `package.json` (script), `.gitignore`.
-- [ ] b.3 [P] Test (falla primero) Feature: `GetProgress`/`PutProgress` (todos los casos del contrato 1.7, más conservación de `{}` y `IsoInstant`).
-- [ ] b.4 [P] Implementar: `ProgressRepository`, `GetProgress`, `PutProgress`, `PutProgressRequest`, `ProgressController`, ruta.
-- [ ] b.5 [P] Test (falla primero): `Library\Domain\ReadingValidator` (casos de `tests/readings-validar.test.mts`), `PublishableId`; `Shared\Domain\HtmlSanitizer` igual a `fixtures/sanitize.json` generado desde `shared/sanitize.ts` (con su generador y un test `node:test` de frescura).
+- [x] b.3 [P] Test (falla primero) Feature: `GetProgress`/`PutProgress` (todos los casos del contrato 1.7, más conservación de `{}` y `IsoInstant`).
+- [x] b.4 [P] Implementar: `ProgressRepository`, `GetProgress`, `PutProgress`, `PutProgressRequest`, `ProgressController`, ruta.
+- [x] b.5 [P] Test (falla primero): `Library\Domain\ReadingValidator` (casos de `tests/readings-validar.test.mts`), `PublishableId`; `Shared\Domain\HtmlSanitizer` igual a `fixtures/sanitize.json` generado desde `shared/sanitize.ts` (con su generador y un test `node:test` de frescura).
   - Archivos: `backend/tests/Unit/Library/*.php`, `backend/tests/Golden/SanitizeGoldenTest.php`, `backend/tests/fixtures/sanitize.json`, `scripts/exportar-prompts.mts` (genera también `sanitize.json`), `tests/fixtures-frescas.test.mts`.
-- [ ] b.6 [P] Implementar: `HtmlSanitizer`, `ReadingValidator`, `PublishableId`, `ReadingsRepository`, casos de uso, `PublishReadingRequest`, `ReadingsController`, ruta.
-- [ ] b.7 [P] Test (falla primero): `Pulse\Domain\Beat` (rangos, módulos, rutas desde `tracks.json`) y Feature de `RecordBeat` (`PULSE_ENABLED=false`, sin dispositivo, upsert con `greatest`).
-- [ ] b.8 [P] Implementar: `Beat`, `PulseRepository`, `RecordBeat`, `RecordBeatRequest`, `PulseController`, ruta.
-- [ ] b.9 [P] Test (falla primero) Feature: admin — sin `ADMIN_TOKEN` 404; token erróneo 403; informe con claves y tipos (`usd` cadena); `op=hide`; `op=schema` aplica `schema.sql` (ruta configurable; hoy la raíz) y cuenta sentencias igual que `migrate()` de `_db.mts`; `op=cleanup-test`; `/healthz` 503 con la base caída.
-- [ ] b.10 [P] Implementar: `AdminQueries` (SQL literal), casos de uso de Admin, `AdminRequest`, `AdminController`, ruta.
-- [ ] b.11 [P] Contratos `progress`, `readings`, `pulse`, `admin`, `client-ip`, `body-limits` verdes contra Laravel.
+- [x] b.6 [P] Implementar: `HtmlSanitizer`, `ReadingValidator`, `PublishableId`, `ReadingsRepository`, casos de uso, `PublishReadingRequest`, `ReadingsController`, ruta.
+- [x] b.7 [P] Test (falla primero): `Pulse\Domain\Beat` (rangos, módulos, rutas desde `tracks.json`) y Feature de `RecordBeat` (`PULSE_ENABLED=false`, sin dispositivo, upsert con `greatest`).
+- [x] b.8 [P] Implementar: `Beat`, `PulseRepository`, `RecordBeat`, `RecordBeatRequest`, `PulseController`, ruta.
+- [x] b.9 [P] Test (falla primero) Feature: admin — sin `ADMIN_TOKEN` 404; token erróneo 403; informe con claves y tipos (`usd` cadena); `op=hide`; `op=schema` aplica `schema.sql` (ruta configurable; hoy la raíz) y cuenta sentencias igual que `migrate()` de `_db.mts`; `op=cleanup-test`; `/healthz` 503 con la base caída.
+- [x] b.10 [P] Implementar: `AdminQueries` (SQL literal), casos de uso de Admin, `AdminRequest`, `AdminController`, ruta.
+- [~] b.11 [P] Contratos `progress`, `readings`, `pulse`, `admin`, `client-ip`, `body-limits` verdes contra Laravel.
 
 ### Lote c — IA: prompts y chat SSE
 
-- [ ] c.1 [P] Fixtures de prompts: `scripts/exportar-prompts.mts` ejecuta `buildMessages` sobre la matriz (cada `kind`, topes justos y pasados, recortes, `PayloadError` con su mensaje, modos de tutor, `reading` con `avoid`) y escribe `backend/tests/fixtures/prompts.json`; el test de frescura de b.5 cubre también este fichero.
-- [ ] c.2 [P] Test (falla primero): `PromptsGoldenTest` — `PromptBuilder::build(kind, payload)` igual al fixture en cada caso; `AiKind::isKind`.
-- [ ] c.3 [P] Implementar: `Ai\Domain\{AiKind, PromptBuilder, PayloadError}`.
-- [ ] c.4 [P] Test (falla primero): `StreamChat` con `FakeChatModel` — pasa los trozos sin cambiar un byte; lee `usage` de líneas partidas entre trozos; al terminar llama a `SettleUsage` con el coste real (y no si no hubo `usage`); error de conexión → anula y `provider_error`; no OK → anula, 402 → `provider_no_credit`; cuerpo de la petición al modelo (`stream`, `stream_options`, `temperature` 0 solo en `test`, `max_tokens = min(AI_MAX_TOKENS, 4096)`).
-- [ ] c.5 [P] Implementar: `ChatModel` (puerto), `DeepSeekClient` (Guzzle con `stream: true`, `connect_timeout` 10 s, sin tiempo total; solo HTTP), `StreamChat`.
-- [ ] c.6 Test (falla primero) Feature: `ChatController` — cabeceras SSE y `X-Quota-*` (con "- 1"), orden de errores, reserva antes de llamar; depende de a.11.
-- [ ] c.7 Implementar: `ChatRequest`, `ChatController` (`StreamedResponse`, `flush()` por trozo), ruta. Contrato `ai-chat` verde contra Laravel, incluido "el primer trozo llega antes de que el simulado termine" a través de nginx.
+- [x] c.1 [P] Fixtures de prompts: `scripts/exportar-prompts.mts` ejecuta `buildMessages` sobre la matriz (cada `kind`, topes justos y pasados, recortes, `PayloadError` con su mensaje, modos de tutor, `reading` con `avoid`) y escribe `backend/tests/fixtures/prompts.json`; el test de frescura de b.5 cubre también este fichero.
+- [x] c.2 [P] Test (falla primero): `PromptsGoldenTest` — `PromptBuilder::build(kind, payload)` igual al fixture en cada caso; `AiKind::isKind`.
+- [x] c.3 [P] Implementar: `Ai\Domain\{AiKind, PromptBuilder, PayloadError}`.
+- [x] c.4 [P] Test (falla primero): `StreamChat` con `FakeChatModel` — pasa los trozos sin cambiar un byte; lee `usage` de líneas partidas entre trozos; al terminar llama a `SettleUsage` con el coste real (y no si no hubo `usage`); error de conexión → anula y `provider_error`; no OK → anula, 402 → `provider_no_credit`; cuerpo de la petición al modelo (`stream`, `stream_options`, `temperature` 0 solo en `test`, `max_tokens = min(AI_MAX_TOKENS, 4096)`).
+- [x] c.5 [P] Implementar: `ChatModel` (puerto), `DeepSeekClient` (Guzzle con `stream: true`, `connect_timeout` 10 s, sin tiempo total; solo HTTP), `StreamChat`.
+- [x] c.6 Test (falla primero) Feature: `ChatController` — cabeceras SSE y `X-Quota-*` (con "- 1"), orden de errores, reserva antes de llamar; depende de a.11.
+- [~] c.7 Implementar: `ChatRequest`, `ChatController` (`StreamedResponse`, `flush()` por trozo), ruta. Contrato `ai-chat` verde contra Laravel, incluido "el primer trozo llega antes de que el simulado termine" a través de nginx.
 
 - [ ] 4.C [C] Punto de control de la fase 4: PHPUnit verde; batería de contrato entera verde contra Laravel y contra Node; `git diff` de `tests/contract/` desde 1.13 vacío (o solo cambios en `_lib.mts` justificados en `progress.md`).
 
