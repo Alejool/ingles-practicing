@@ -162,7 +162,7 @@ test("op=cleanup-test borra solo lo de @smoke.test / smoke-% / 'Smoke…' y devu
   // Lo de la prueba de humo.
   const smoke = await login(correoUnico("smoke.test"));
   const devSmoke = `smoke-${randomBytes(6).toString("hex")}`;
-  assert.equal((await pedir("/api/ai/chat", { json: { kind: "test" }, device: devSmoke, ip: ipUnica() })).status, 200);
+  assert.equal((await pedir("/api/ai/chat", { json: { kind: "test" }, token: smoke.token, device: devSmoke, ip: ipUnica() })).status, 200);
   await pedir("/api/pulse", { json: { planDay: 1 }, device: devSmoke });
   const lectura = (title: string) => ({
     id: `ct-${randomBytes(6).toString("hex")}`,
@@ -174,7 +174,7 @@ test("op=cleanup-test borra solo lo de @smoke.test / smoke-% / 'Smoke…' y devu
   // Lo que no se toca.
   const normal = await login();
   const devNormal = dispositivoUnico();
-  assert.equal((await pedir("/api/ai/chat", { json: { kind: "test" }, device: devNormal, ip: ipUnica() })).status, 200);
+  assert.equal((await pedir("/api/ai/chat", { json: { kind: "test" }, token: normal.token, device: devNormal, ip: ipUnica() })).status, 200);
   await pedir("/api/pulse", { json: { planDay: 1 }, device: devNormal });
   const textoNormal = lectura("smoke en minúscula no cuenta");
   await pedir("/api/readings", { method: "POST", token: normal.token, json: textoNormal });

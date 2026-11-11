@@ -10,7 +10,7 @@ import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 
 import { setDriver, migrate, q } from "../netlify/functions/_db.mts";
-import { ApiError } from "../netlify/functions/_http.mts";
+import { ApiError, sha256Hex } from "../netlify/functions/_http.mts";
 import { reservar, anularReserva } from "../netlify/functions/_quota.mts";
 import aiChat from "../netlify/functions/ai-chat.mts";
 
@@ -137,10 +137,14 @@ test("anular una reserva la deja sin cobrar", async () => {
 });
 
 test("si la llamada a DeepSeek revienta, la reserva no se queda cobrada", async () => {
+  // El chat exige sesión (landing-y-acceso AC-21).
+  const [{ id }] = await q<{ id: string }>(`insert into users (email) values ('b@example.com') returning id`);
+  await q(`insert into sessions (user_id, token_hash, expires_at) values ($1, $2, now() + interval '1 day')`,
+    [id, await sha256Hex("tok-quota")]);
   globalThis.fetch = async () => { throw new TypeError("fetch failed"); };
   const res = await aiChat(new Request("http://localhost/api/ai/chat", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Device-Id": "dispositivo-1" },
+    headers: { "Content-Type": "application/json", "X-Device-Id": "dispositivo-1", Authorization: "Bearer tok-quota" },
     body: JSON.stringify({ kind: "test", payload: {} }),
   }));
   assert.equal(res.status, 502);

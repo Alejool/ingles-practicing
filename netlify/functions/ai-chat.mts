@@ -11,7 +11,7 @@
  */
 
 import { preflight, corsHeaders, fail, ApiError, clientIp, hashIp, readJson, deviceId, num } from "./_http.mts";
-import { currentUser } from "./_auth.mts";
+import { requireUser } from "./_auth.mts";
 import { reservar, anularReserva, readQuota, limits, costeMicros } from "./_quota.mts";
 import { q } from "./_db.mts";
 import { buildMessages, isKind, PayloadError } from "../../shared/prompts.ts";
@@ -24,6 +24,9 @@ export default async (req: Request): Promise<Response> => {
 
   try {
     if (req.method !== "POST") throw new ApiError(405, "method_not_allowed", "Método no permitido.");
+    // Solo con cuenta (landing-y-acceso AC-21): sin sesión no se lee el cuerpo,
+    // no se reserva nada ni se llama al proveedor.
+    const user = await requireUser(req);
 
     const body = await readJson(req);
     const kind = body?.kind;
@@ -32,7 +35,6 @@ export default async (req: Request): Promise<Response> => {
     const model = MODELS.includes(body?.model) ? body.model : MODELS[0];
     const dev = deviceId(req, body);
     const ipHash = await hashIp(clientIp(req));
-    const user = await currentUser(req);
 
     let messages: Array<{ role: string; content: string }>;
     try {

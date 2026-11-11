@@ -6,6 +6,13 @@
  * Créditos (contract.env deja los QUOTA_* por defecto): 1 crédito = 500
  * micros; reserva por kind: test 1, error 2, writing 6, ×2 con el razonador.
  * Coste real de la respuesta simulada (120 + 30 tokens, deepseek-chat): 65 micros.
+ *
+ * Sesión obligatoria (landing-y-acceso AC-21, plan K-12): preflight → 405 →
+ * sesión (401 / 403) → cuerpo → `bad_kind` → … Sin sesión no se lee el cuerpo,
+ * no se reserva nada ni se llama al proveedor. El cupo anónimo deja de usarse.
+ * El caso "usuario bloqueado → 403" no se puede preparar aquí sin escribir en
+ * la base: lo cubren `tests/ai-chat-sesion.test.mts` (Node, pglite) y
+ * `ChatEndpointTest` (Laravel, en transacción).
  */
 
 import { test } from "node:test";
@@ -13,7 +20,7 @@ import { randomBytes } from "node:crypto";
 import assert from "node:assert/strict";
 import {
   pedir, enviar, esError, esJsonApi, conCors, fila, consulta, login, dispositivoUnico, ipUnica, hashIp,
-  ultimaAlSimulado, CLAVES_ANON, CLAVES_USUARIO, type Opciones,
+  ultimaAlSimulado, CLAVES_USUARIO, type Opciones,
 } from "./_lib.mts";
 import { cuerpoEsperado, PAUSA_LENTO_MS } from "./fake-deepseek.mts";
 
@@ -21,6 +28,19 @@ const MICROS_OK = 65;
 
 function quien(): { device: string; ip: string } {
   return { device: dispositivoUnico(), ip: ipUnica() };
+}
+
+/** Sesión nueva: cada test que gasta créditos lleva su usuario (60 al día). */
+async function conSesion(): Promise<{ device: string; ip: string; token: string }> {
+  const { token } = await login();
+  return { ...quien(), token };
+}
+
+/** Sesión compartida para los casos que se rechazan antes de reservar. */
+let comun: Promise<string> | null = null;
+function tokenComun(): Promise<string> {
+  comun ??= login().then(l => l.token);
+  return comun;
 }
 
 function chat(json: unknown, o: Opciones = {}) {
@@ -49,24 +69,62 @@ for (const method of ["GET", "PUT"]) {
   });
 }
 
+/* ─────────────── sesión obligatoria (AC-21) ─────────────── */
+
+test("sin Authorization → 401 not_authenticated, sin fila en ai_usage y sin petición al proveedor", async () => {
+  const q = quien();
+  const m = marca();
+  const r = await chat({ kind: "error", payload: { category: "c", text: m } }, { ...q, origin: "https://permitido.example" });
+  esError(r, 401, "not_authenticated", "Inicia sesión para continuar.");
+  esJsonApi(r);
+  assert.equal((await usos(q.device)).length, 0, "no reserva nada");
+  assert.equal(await ultimaAlSimulado(m), null, "no llama al proveedor");
+});
+
+test("token caducado o desconocido → 401 not_authenticated, sin fila ni petición al proveedor", async () => {
+  const q = quien();
+  const m = marca();
+  const r = await chat({ kind: "error", payload: { text: m } }, { ...q, token: `caducado-${randomBytes(16).toString("hex")}` });
+  esError(r, 401, "not_authenticated", "Inicia sesión para continuar.");
+  assert.equal((await usos(q.device)).length, 0);
+  assert.equal(await ultimaAlSimulado(m), null);
+});
+
+test("sin sesión el cupo anónimo ya no se usa: ni con el dispositivo en el cuerpo", async () => {
+  const device = dispositivoUnico();
+  esError(await chat({ kind: "test", device_id: device }, { ip: ipUnica() }), 401, "not_authenticated");
+  assert.equal((await usos(device)).length, 0);
+});
+
+test("el 401 va antes que bad_json, 413 y bad_kind", async () => {
+  esError(await pedir("/api/ai/chat", { body: "{kind" }), 401, "not_authenticated");
+  esError(await pedir("/api/ai/chat", { body: JSON.stringify({ kind: "nada", x: "a".repeat(96 * 1024) }) }),
+    401, "not_authenticated");
+  esError(await chat({ kind: "nada", payload: {} }, quien()), 401, "not_authenticated");
+});
+
+/* ─────────────── validación con sesión ─────────────── */
+
 test("JSON inválido → 400 bad_json", async () => {
-  esError(await pedir("/api/ai/chat", { body: "{kind" }), 400, "bad_json", "JSON inválido.");
+  esError(await pedir("/api/ai/chat", { body: "{kind", token: await tokenComun() }), 400, "bad_json", "JSON inválido.");
 });
 
 test("cuerpo de más de 96 KB → 413 payload_too_large (antes que bad_kind)", async () => {
-  const r = await pedir("/api/ai/chat", { body: JSON.stringify({ kind: "nada", x: "a".repeat(96 * 1024) }) });
+  const r = await pedir("/api/ai/chat", {
+    body: JSON.stringify({ kind: "nada", x: "a".repeat(96 * 1024) }), token: await tokenComun(),
+  });
   esError(r, 413, "payload_too_large", "El texto enviado es demasiado largo.");
 });
 
 test("el tope de 96 KB cuenta caracteres, no bytes: 96 KB de 'ñ' pasan el tope", async () => {
   const relleno = "ñ".repeat(96 * 1024 - 40);
-  const r = await pedir("/api/ai/chat", { body: JSON.stringify({ kind: "nada", x: relleno }) });
+  const r = await pedir("/api/ai/chat", { body: JSON.stringify({ kind: "nada", x: relleno }), token: await tokenComun() });
   esError(r, 422, "bad_kind");
 });
 
 for (const kind of [undefined, "", "nada", "WRITING", 3]) {
   test(`kind ${JSON.stringify(kind)} → 422 bad_kind`, async () => {
-    const r = await chat({ kind, payload: {} }, quien());
+    const r = await chat({ kind, payload: {} }, { ...quien(), token: await tokenComun() });
     esError(r, 422, "bad_kind", "Tipo de petición no reconocido.");
     esJsonApi(r);
   });
@@ -81,7 +139,7 @@ for (const [kind, payload, mensaje] of [
     "La conversación tiene que terminar en un mensaje tuyo."],
 ] as const) {
   test(`${kind} ${JSON.stringify(payload)} → 422 bad_payload "${mensaje}"`, async () => {
-    const q = quien();
+    const q = { ...quien(), token: await tokenComun() };
     const r = await chat({ kind, payload }, q);
     esError(r, 422, "bad_payload", mensaje);
     assert.equal((await usos(q.device)).length, 0, "no reserva nada");
@@ -91,30 +149,31 @@ for (const [kind, payload, mensaje] of [
 /* ─────────────── stream ─────────────── */
 
 test("200: stream byte a byte, cabeceras SSE y X-Quota-* (con el «- 1» actual), fila con el coste real", async () => {
-  const q = quien();
+  const q = await conSesion();
   const res = await enviar("/api/ai/chat", { ...q, json: { kind: "test", payload: {} }, origin: "https://permitido.example" });
   assert.equal(res.status, 200);
   assert.equal(res.headers.get("content-type"), "text/event-stream; charset=utf-8");
   assert.equal(res.headers.get("cache-control"), "no-store, no-transform");
   assert.equal(res.headers.get("x-accel-buffering"), "no");
-  // Reserva de 1 crédito → remaining 14; la cabecera resta otro (lo arregla tutor-contextual).
-  assert.equal(res.headers.get("x-quota-remaining"), "13");
-  assert.equal(res.headers.get("x-quota-limit"), "15");
-  assert.equal(res.headers.get("x-quota-window"), "total");
+  // Reserva de 1 crédito de los 60 del día → remaining 59; la cabecera resta otro (lo arregla tutor-contextual).
+  assert.equal(res.headers.get("x-quota-remaining"), "58");
+  assert.equal(res.headers.get("x-quota-limit"), "60");
   conCors(res.headers);
   const bytes = Buffer.from(await res.arrayBuffer());
   assert.ok(bytes.equals(Buffer.from(cuerpoEsperado("ok"), "utf8")), "cuerpo idéntico al del simulado");
 
   const filas = await usos(q.device);
   assert.equal(filas.length, 1);
-  assert.deepEqual(filas[0], {
-    user_id: null, device_id: q.device, ip_hash: hashIp(q.ip), kind: "test", model: "deepseek-chat",
+  const { user_id, ...resto } = filas[0];
+  assert.ok(user_id, "la fila lleva el usuario");
+  assert.deepEqual(resto, {
+    device_id: q.device, ip_hash: hashIp(q.ip), kind: "test", model: "deepseek-chat",
     prompt_tokens: 120, completion_tokens: 30, cost_micros: MICROS_OK, ok: true, hoy: true,
   });
 });
 
 test("petición al proveedor: modelo, stream, usage, temperatura 0 en test, max_tokens, mensajes y clave", async () => {
-  const r = await chat({ kind: "test", payload: { cualquier: "cosa" } }, quien());
+  const r = await chat({ kind: "test", payload: { cualquier: "cosa" } }, await conSesion());
   assert.equal(r.status, 200);
   const ultima = await ultimaAlSimulado('"ping"');
   assert.ok(ultima);
@@ -133,7 +192,7 @@ test("petición al proveedor: modelo, stream, usage, temperatura 0 en test, max_
 });
 
 test("temperatura 1 fuera de test; un modelo fuera de la lista se cambia por deepseek-chat", async () => {
-  const q = quien();
+  const q = await conSesion();
   const m = marca();
   const r = await chat({ kind: "error", model: "gpt-4o", payload: { category: "c", text: m } }, q);
   assert.equal(r.status, 200);
@@ -145,7 +204,7 @@ test("temperatura 1 fuera de test; un modelo fuera de la lista se cambia por dee
 });
 
 test("deepseek-reasoner se respeta y reserva el doble", async () => {
-  const q = quien();
+  const q = await conSesion();
   const m = marca();
   const r = await chat({ kind: "error", model: "deepseek-reasoner", payload: { text: `${m} FAKE:sin_uso` } }, q);
   assert.equal(r.status, 200, r.text.slice(0, 300));
@@ -159,7 +218,7 @@ test("deepseek-reasoner se respeta y reserva el doble", async () => {
 });
 
 test("sin evento de usage: stream intacto y la fila se queda con la reserva", async () => {
-  const q = quien();
+  const q = await conSesion();
   const r = await chat({ kind: "error", payload: { text: "FAKE:sin_uso" } }, q);
   assert.equal(r.status, 200);
   assert.equal(r.text, cuerpoEsperado("sin_uso"));
@@ -171,7 +230,7 @@ test("sin evento de usage: stream intacto y la fila se queda con la reserva", as
 });
 
 test("stream lento: el primer trozo llega antes de que el simulado termine; la reserva existe durante el stream", async () => {
-  const q = quien();
+  const q = await conSesion();
   const inicio = Date.now();
   const res = await enviar("/api/ai/chat", { ...q, json: { kind: "error", payload: { text: "FAKE:lento" } } });
   assert.equal(res.status, 200);
@@ -209,7 +268,7 @@ for (const [modo, code, message] of [
   ["caido", "provider_error", "El servicio de IA no está respondiendo. Inténtalo en un momento."],
 ] as const) {
   test(`proveedor ${modo} → 502 ${code}; la reserva queda anulada (ok=false)`, async () => {
-    const q = quien();
+    const q = await conSesion();
     const r = await chat({ kind: "error", payload: { text: `FAKE:${modo}` } }, q);
     esError(r, 502, code, message);
     esJsonApi(r);
@@ -219,6 +278,7 @@ for (const [modo, code, message] of [
     assert.equal(filas[0].cost_micros, 2 * 500);
     // Lo anulado no cuenta en la cuota.
     const cuota = await pedir("/api/quota", q);
+    assert.equal(cuota.body.quota.authenticated, true);
     assert.equal(cuota.body.quota.used, 0);
   });
 }
@@ -226,58 +286,26 @@ for (const [modo, code, message] of [
 /* ─────────────── cuotas ─────────────── */
 
 test("too_fast a la 7.ª llamada del mismo dispositivo en un minuto (aunque cambie la IP)", async () => {
+  const { token } = await conSesion();
   const device = dispositivoUnico();
   for (let i = 0; i < 6; i++) {
-    const r = await chat({ kind: "test" }, { device, ip: ipUnica() });
+    const r = await chat({ kind: "test" }, { token, device, ip: ipUnica() });
     assert.equal(r.status, 200, `llamada ${i + 1}: ${r.text}`);
   }
-  const r = await chat({ kind: "test" }, { device, ip: ipUnica() });
+  const r = await chat({ kind: "test" }, { token, device, ip: ipUnica() });
   esError(r, 429, "too_fast", "Vas muy rápido. Espera un minuto y vuelve a intentarlo.");
   esJsonApi(r);
   assert.equal((await usos(device)).length, 6, "el rechazo no deja fila");
 });
 
 test("too_fast a la 7.ª llamada de la misma IP en un minuto (sin dispositivo)", async () => {
+  const { token } = await conSesion();
   const ip = ipUnica();
   for (let i = 0; i < 6; i++) {
-    const r = await chat({ kind: "test" }, { ip, device: dispositivoUnico() });
+    const r = await chat({ kind: "test" }, { token, ip, device: dispositivoUnico() });
     assert.equal(r.status, 200, `llamada ${i + 1}: ${r.text}`);
   }
-  esError(await chat({ kind: "test" }, { ip }), 429, "too_fast");
-});
-
-test("anónimo: 402 anon_limit «te quedan» y «has gastado», con quota", async () => {
-  const q = quien();
-  const sinUso = (kind: string) =>
-    chat({ kind, payload: kind === "writing" ? { answer: "FAKE:sin_uso" } : { text: "FAKE:sin_uso" } }, q);
-  for (const kind of ["writing", "writing", "error"]) assert.equal((await sinUso(kind)).status, 200);
-
-  // 14 créditos gastados: queda 1 y un writing pide 6.
-  const queda = await sinUso("writing");
-  esError(queda, 402, "anon_limit",
-    "Te quedan 1 créditos de prueba y esta tarea necesita unos 6. Entra con tu correo y tendrás bastantes más.");
-  esJsonApi(queda);
-  assert.deepEqual(Object.keys(queda.body.error), ["code", "message", "quota"]);
-  assert.deepEqual(Object.keys(queda.body.error.quota), CLAVES_ANON);
-  assert.equal(queda.body.error.quota.used, 14);
-  assert.equal(queda.body.error.quota.remaining, 1);
-
-  // Un test cabe (1 crédito) y deja 14 × 500 + 65 micros → 15 créditos.
-  assert.equal((await chat({ kind: "test" }, q)).status, 200);
-  const agotado = await chat({ kind: "test" }, q);
-  esError(agotado, 402, "anon_limit",
-    "Has gastado los 15 créditos de prueba. Entra con tu correo para seguir; el resto de la app no necesita cuenta.");
-  assert.equal(agotado.body.error.quota.used, 15);
-  assert.equal(agotado.body.error.quota.remaining, 0);
-  assert.equal((await usos(q.device)).length, 4, "los rechazos no dejan fila");
-});
-
-test("el anónimo se cuenta también por IP: otro dispositivo en la misma IP hereda el gasto", async () => {
-  const ip = ipUnica();
-  const r1 = await chat({ kind: "writing", payload: { answer: "FAKE:sin_uso" } }, { ip, device: dispositivoUnico() });
-  assert.equal(r1.status, 200);
-  const r2 = await pedir("/api/quota", { ip, device: dispositivoUnico() });
-  assert.equal(r2.body.quota.used, 6);
+  esError(await chat({ kind: "test" }, { token, ip }), 429, "too_fast");
 });
 
 test("con cuenta: X-Quota-* de la ventana diaria y 429 user_daily_limit al agotar los 60", async () => {
@@ -320,8 +348,9 @@ test("con cuenta: «te quedan N» cuando no cabe la tarea entera", async () => {
 });
 
 test("el dispositivo puede ir en el cuerpo (device_id) en vez de la cabecera", async () => {
+  const { token } = await conSesion();
   const device = dispositivoUnico();
-  const r = await chat({ kind: "test", device_id: device }, { ip: ipUnica() });
+  const r = await chat({ kind: "test", device_id: device }, { token, ip: ipUnica() });
   assert.equal(r.status, 200);
   assert.equal((await usos(device)).length, 1);
 });

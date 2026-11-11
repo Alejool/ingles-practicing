@@ -13,16 +13,18 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * `POST /api/ai/chat`, el único camino hacia el modelo. Orden de ai-chat.mts:
- * 405 → cuerpo → `bad_kind` → modelo → dispositivo, IP, usuario → `bad_payload` →
+ * 405 → sesión (401/403) → cuerpo → `bad_kind` → modelo → dispositivo, IP → `bad_payload` →
  * reserva → proveedor → 200 `text/event-stream` con el stream del proveedor byte a byte.
+ * Solo con cuenta (landing-y-acceso AC-21): sin sesión no se lee el cuerpo, no se
+ * reserva nada ni se llama al modelo.
  */
 final class ChatController
 {
     public function __invoke(ChatRequest $request, ResolveSession $session, StreamChat $chat, ReadQuota $quota): Response
     {
         $request->assertMethod('POST');
+        $user = $session->require(ClientContext::bearer($request));
         $cmd = $request->toCommand();
-        $user = $session->handle(ClientContext::bearer($request));
 
         $stream = $chat->start($user, $cmd);
         $state = $quota->handle($user, $cmd->deviceId, $cmd->ipHash);
