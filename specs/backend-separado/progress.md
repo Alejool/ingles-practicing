@@ -227,3 +227,6 @@ Stack de contrato Laravel: `APP_URL=http://localhost:8080 API_ENV_FILE=../tests/
 - `AdminQueries::deleteSmokeData`: quitado el `delete` de `ai_usage` con `kind = 'test'`, contenido en el siguiente (`device_id like 'smoke-%'`); ningún contador lo usa.
 - **No hecho**: mandar `deepseek-flash` al proveedor (DECISIONS 2026-11-05). El contrato congelado `ai-chat.test.mts` (líneas 123, 141, 153) exige que al proveedor llegue `deepseek-chat` / `deepseek-reasoner`, y la decisión no dice cómo pedir el razonamiento a `deepseek-flash`. Decide el dueño: o se cambia el contrato (y Node) en una tarea propia, o se deja para el corte.
 - PHPUnit (`run --rm`, `ruta_test`): **376/376**. Contrato contra Laravel, todos los archivos salvo `admin` (borra filas de `ruta` con `op=cleanup-test`; sin autorización en esta sesión): **186/186**, incluido `X-Accel-Buffering` a través de nginx.
+
+### Cambio de contrato por landing-y-acceso (AC-21) — 2026-11-07
+- `/api/ai/chat` exige sesión: 405 → sesión (401/403) → cuerpo. Contrato `ai-chat.test.mts` cambiado junto con Node (`ai-chat.mts`) y Laravel (`ChatController` + `ChatEndpointTest`). Detalle en `specs/landing-y-acceso/progress.md`, fase 2. El cupo anónimo deja de usarse en el chat; su código de cuota se queda (K-13).
