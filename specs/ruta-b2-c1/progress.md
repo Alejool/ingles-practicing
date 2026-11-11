@@ -184,3 +184,10 @@ El verificador no encontró ninguna clave errónea ni regla falsa; pidió las co
 Razonamiento de `t3`: con la primera frase nueva queda dicho que los documentos se imprimieron. `needn't have printed` es la forma que lo expresa sin ambigüedad, pero `didn't need to print` no afirma lo contrario: solo deja abierto si la acción ocurrió, y el contexto lo resuelve. Es gramatical, conserva el sentido y un estudiante la dará, así que se acepta. Es coherente con `g4`, que dice que `didn't need to` «normalmente» indica que no se hizo, y con `d16`, donde el contexto (`instead`) sí excluye `needn't have`.
 
 Reverificación: los cinco ítems nuevos del diagnóstico se resolvieron otra vez a ciegas y coinciden con la clave; las posiciones correctas no cambian (A 6 · B 8 · C 8 · D 8). Las variantes nuevas de transformación tienen de 3 a 6 palabras y contienen la palabra clave. La búsqueda de duplicados contra `a2b1` y `b1b2` sigue sin coincidencias. `npm run check`: 0 errores, 0 avisos, 0 pistas.
+
+## Fase 2 (parcial) — 2.4 a 2.6, adelantadas para `landing-y-acceso` 0.3 — 2026-11-07
+
+- 2.4: `mergeTrack`/`mergeState` movidos tal cual a `src/scripts/merge.ts`; `sync.ts` los importa y reexporta `mergeState`. `tests/merge.test.mts` (caracterización con dos estados de dos rutas: comunes, `b1b2`, `a2b1`, no mutación, ruta en blanco, reexportación). Rojo por módulo inexistente → verde tras mover (7/7). Deja fijadas las pérdidas de hoy (`known`, `seen` y `onboarded` remotos; `gram` por unidad entera; `chk` local `false` sobre `true` remoto), que cierra `landing-y-acceso` 1.9–1.10.
+- 2.5: cinco tests de rutas nuevas (`b2c1` solo remoto, solo local, `b2c1`/`zz99` en ambos, 2.4 intacto con rutas extra, ruta activa local). Rojo 2/5 (solo remoto y en ambos).
+- 2.6: `mergeState` recorre las claves de `remote.tracks`; lo local ya se conservaba por el `structuredClone`. 12/12.
+- Sin hacer de esta fase: 2.1–2.3 (`migrate` sigue descartando rutas desconocidas al cargar, así que `replaceState(mergeState(…))` aún pierde `b2c1` en el navegador hasta 2.3) y 2.7–2.9.

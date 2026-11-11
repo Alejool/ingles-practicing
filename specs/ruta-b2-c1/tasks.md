@@ -37,11 +37,11 @@ Autocomprobación común de toda tarea de contenido (se cita como "AUTO"):
   - Archivos: `tests/estado.test.mts`.
 - [ ] 2.3 Implementar: `migrate()` nuevo en `state.ts`; el tipo de `AppState.tracks` admite más claves. `DEF` y `P()` no cambian de comportamiento.
   - Archivos: `src/scripts/state.ts`.
-- [ ] 2.4 Test de caracterización: fusión hoy. Se mueve `mergeTrack`/`mergeState` a `src/scripts/merge.ts` sin cambiar una línea de lógica (`sync.ts` lo importa y lo reexporta) y se fija su resultado con dos estados de dos rutas. (AC-35)
+- [x] 2.4 Test de caracterización: fusión hoy. Se mueve `mergeTrack`/`mergeState` a `src/scripts/merge.ts` sin cambiar una línea de lógica (`sync.ts` lo importa y lo reexporta) y se fija su resultado con dos estados de dos rutas. (AC-35)
   - Archivos: `tests/merge.test.mts`, `src/scripts/merge.ts`, `src/scripts/sync.ts`.
-- [ ] 2.5 Test: fusión con rutas nuevas (falla primero). `b2c1` solo en remoto → aparece en el resultado; solo en local → se conserva; en ambos → se funde con las mismas reglas; `zz99` igual; el resultado de 2.4 no cambia; la ruta activa local no la pisa el remoto. (AC-36)
+- [x] 2.5 Test: fusión con rutas nuevas (falla primero). `b2c1` solo en remoto → aparece en el resultado; solo en local → se conserva; en ambos → se funde con las mismas reglas; `zz99` igual; el resultado de 2.4 no cambia; la ruta activa local no la pisa el remoto. (AC-36)
   - Archivos: `tests/merge.test.mts`.
-- [ ] 2.6 Implementar: `mergeState` recorre la unión de claves.
+- [x] 2.6 Implementar: `mergeState` recorre la unión de claves.
   - Archivos: `src/scripts/merge.ts`.
 - [ ] 2.7 Test: el servidor conserva rutas que no llegan (falla primero). `conservarRutas`: `previo` con `b2c1` y `entrante` sin ella → se conserva; `entrante` con `b2c1` → gana la entrante; `entrante` sin `tracks` (formato antiguo) → sin cambios; `previo` nulo → sin cambios; no muta sus argumentos. Y de extremo a extremo con pglite: PUT de tres rutas, PUT de dos con la versión correcta, GET devuelve las tres. (AC-37)
   - Archivos: `tests/progress.test.mts`.
