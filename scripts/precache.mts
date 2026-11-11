@@ -21,6 +21,8 @@ import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { join, posix, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { clasificar } from "./precache-lib.mts";
+
 // fileURLToPath y no .pathname: en Windows .pathname devuelve "/C:/Users/…",
 // que al unirlo con join() acaba en "C:\\C:\\Users\\…" y no existe.
 const DIST = fileURLToPath(new URL("../dist/", import.meta.url));
@@ -40,28 +42,8 @@ function rel(p: string): string {
   return "./" + relative(DIST, p).split(sep).join(posix.sep);
 }
 
-/** El contenido de una ruta o sus lecturas: pesado y no todo el mundo lo usa. */
-function esContenido(r: string): boolean {
-  return /\/(a2b1|b1b2|reading\d?)\.[A-Za-z0-9_-]+\.js$/.test(r);
-}
-
 const todos = await archivos(DIST);
-
-const esqueleto = new Set<string>(["./", "./index.html", "./manifest.webmanifest"]);
-const opcional = new Set<string>();
-
-for (const p of todos) {
-  const r = rel(p);
-  if (r === "./sw.js") continue;
-  if (r.startsWith("./icons/")) { esqueleto.add(r); continue; }
-  if (r.endsWith(".css")) { esqueleto.add(r); continue; }
-  if (r.endsWith(".js")) {
-    if (esContenido(r)) opcional.add(r);
-    else esqueleto.add(r);
-  }
-}
-
-const lista = (s: Set<string>) => [...s].sort();
+const { esqueleto, opcional } = clasificar(todos.map(rel));
 
 // La versión sale del contenido: mismo build, misma versión; build nuevo, caché nueva.
 const huella = createHash("sha256");
@@ -78,8 +60,8 @@ function sustituir(nombre: string, valor: string): void {
 }
 
 sustituir("CACHE_VERSION", JSON.stringify(version));
-sustituir("SHELL_FILES", JSON.stringify(lista(esqueleto), null, 2));
-sustituir("CONTENT_FILES", JSON.stringify(lista(opcional), null, 2));
+sustituir("SHELL_FILES", JSON.stringify(esqueleto, null, 2));
+sustituir("CONTENT_FILES", JSON.stringify(opcional, null, 2));
 
 await writeFile(sw, src);
 
@@ -88,7 +70,7 @@ const kb = async (rs: string[]) => {
   for (const r of rs) n += (await stat(join(DIST, r.replace("./", "")).replace(/\/$/, ""))).size;
   return Math.round(n / 1024);
 };
-const esq = lista(esqueleto).filter(r => r !== "./");
+const esq = esqueleto.filter(r => !r.endsWith("/"));
 console.log(`[precache] ${version}`);
 console.log(`[precache] esqueleto: ${esq.length} archivos · ${await kb(esq)} KB (se instalan de golpe)`);
-console.log(`[precache] contenido: ${opcional.size} archivos · ${await kb(lista(opcional))} KB (se guardan al usarlos)`);
+console.log(`[precache] contenido: ${opcional.length} archivos · ${await kb(opcional)} KB (se guardan al usarlos)`);

@@ -27,6 +27,37 @@ const description =
 ---
 
 <Base title={title} description={description}>
+  <!--
+    Guardián de acceso (landing-y-acceso AC-1, plan K-2): se ejecuta antes de
+    descargar nada de la app. Sin token ni marcador de cuenta activo, a la
+    landing. Es de experiencia, no de seguridad (K-3): lo que cuesta y lo
+    personal ya lo protege el servidor.
+  -->
+  <script is:inline slot="head" define:vars={{ base: import.meta.env.BASE_URL.replace(/\/?$/, "/") }}>
+    (function () {
+      var h = location.hash;
+      var landing = base + "bienvenida/";
+      if (h === "#auth=expired" || h === "#auth=error") {
+        document.documentElement.dataset.acceso = "fuera";
+        location.replace(landing + "#acceso=" + (h === "#auth=expired" ? "caducado" : "error"));
+        return;
+      }
+      if (h.indexOf("#auth=") === 0) return;
+      var token = null;
+      var cuenta = null;
+      try {
+        token = localStorage.getItem("ruta-b1b2-session");
+        var c = JSON.parse(localStorage.getItem("ruta-b1b2-cuenta") || "null");
+        // Misma regla que leerMarcador() de cuenta-local.ts (lo fija tests/guardian.test.mts).
+        if (c && c.v === 1 && typeof c.id === "string" && /^[0-9a-f]{16}$/.test(c.id)
+          && (c.salida === null || typeof c.salida === "string")) cuenta = c;
+      } catch (e) { /* sin almacenamiento = sin sesión */ }
+      if (token || (cuenta && cuenta.salida === null)) return;
+      // arranque.ts lo lee y no carga la app mientras el navegador se va.
+      document.documentElement.dataset.acceso = "fuera";
+      location.replace(landing);
+    })();
+  </script>
   <div class="app">
     <Rail />
     <main class="main" id="main">
@@ -53,5 +84,5 @@ const description =
 </Base>
 
 <script>
-  import "../scripts/main";
+  import "../scripts/arranque";
 </script>

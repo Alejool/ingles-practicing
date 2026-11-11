@@ -70,8 +70,14 @@ export function isSignedIn(): boolean {
   return !!sessionToken();
 }
 
-export function headers(extra: Record<string, string> = {}): Record<string, string> {
-  const h: Record<string, string> = { "X-Device-Id": deviceId(), ...extra };
+/**
+ * `dispositivo: false` no manda ni crea el identificador del aparato: la landing
+ * habla con la API sin dejar nada guardado (landing-y-acceso AC-4, plan K-10).
+ */
+export interface Opciones { dispositivo?: boolean }
+
+export function headers(extra: Record<string, string> = {}, { dispositivo = true }: Opciones = {}): Record<string, string> {
+  const h: Record<string, string> = { ...(dispositivo ? { "X-Device-Id": deviceId() } : {}), ...extra };
   const t = sessionToken();
   if (t) h.Authorization = "Bearer " + t;
   return h;
@@ -102,20 +108,20 @@ async function parse(res: Response): Promise<any> {
   return data;
 }
 
-export async function get(path: string): Promise<any> {
+export async function get(path: string, opciones: Opciones = {}): Promise<any> {
   try {
-    return await parse(await fetch(apiUrl(path), { headers: headers(), cache: "no-store" }));
+    return await parse(await fetch(apiUrl(path), { headers: headers({}, opciones), cache: "no-store" }));
   } catch (e) {
     if (e instanceof ApiError) throw e;
     throw new ApiError("network", "No se pudo conectar con el servidor.");
   }
 }
 
-export async function send(path: string, method: "POST" | "PUT", body: unknown): Promise<any> {
+export async function send(path: string, method: "POST" | "PUT", body: unknown, opciones: Opciones = {}): Promise<any> {
   try {
     return await parse(await fetch(apiUrl(path), {
       method,
-      headers: headers({ "Content-Type": "application/json" }),
+      headers: headers({ "Content-Type": "application/json" }, opciones),
       body: JSON.stringify(body ?? {}),
     }));
   } catch (e) {
@@ -201,8 +207,8 @@ export interface LoginLinkResult {
   mailboxUrl?: string | null;
 }
 
-export async function requestLoginLink(email: string): Promise<LoginLinkResult> {
-  return await send("/api/auth/request", "POST", { email });
+export async function requestLoginLink(email: string, opciones: Opciones = {}): Promise<LoginLinkResult> {
+  return await send("/api/auth/request", "POST", { email }, opciones);
 }
 
 export async function logout(): Promise<void> {

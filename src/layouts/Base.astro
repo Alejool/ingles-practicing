@@ -4,9 +4,11 @@ import "../styles/global.css";
 interface Props {
   title: string;
   description: string;
+  /** "Preparando tu contenido…" mientras baja la app. La landing no lo necesita. */
+  cartelCarga?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, cartelCarga = true } = Astro.props;
 const base = import.meta.env.BASE_URL;
 ---
 
@@ -15,6 +17,8 @@ const base = import.meta.env.BASE_URL;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Lo primero del <head>: el guardián de acceso de cada página va aquí. -->
+    <slot name="head" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
@@ -43,11 +47,13 @@ const base = import.meta.env.BASE_URL;
       <p style="padding:24px;font-family:system-ui">Esta aplicación necesita JavaScript activado.</p>
     </noscript>
     <!-- El contenido del curso llega en su propio bundle; esto se ve mientras baja. -->
-    <div id="boot" class="boot">
-      <div class="boot-mark">R</div>
-      <p class="boot-t">Ruta B1 → B2</p>
-      <p class="boot-s">Preparando tu contenido…</p>
-    </div>
+    {cartelCarga && (
+      <div id="boot" class="boot">
+        <div class="boot-mark">R</div>
+        <p class="boot-t">Ruta B1 → B2</p>
+        <p class="boot-s">Preparando tu contenido…</p>
+      </div>
+    )}
     <!-- Región viva: aquí escribe `anunciar()` lo que el lector de pantalla tiene que decir. -->
     <div id="anuncio" class="sr-only" role="status"></div>
     <slot />

@@ -14,7 +14,8 @@
  *                  También se puede pedir su descarga con un mensaje WARM.
  *
  * Estrategias:
- *   - navegación → red primero, index.html cacheado como respaldo offline
+ *   - navegación → red primero; sin red, la página cacheada que toca: la landing
+ *     (bienvenida/index.html) para lo que cuelga de bienvenida/, index.html para el resto
  *   - mismo origen → cache-first, y lo nuevo se guarda al vuelo
  *   - Google Fonts → stale-while-revalidate en una caché que sobrevive a los despliegues
  *   - cualquier POST (la API) → siempre a la red
@@ -35,6 +36,12 @@ const CONTENT_FILES = [];
 
 const SHELL = CACHE_VERSION + "-shell";
 const FONTS = "ruta-b1b2-fonts";
+
+/** Página cacheada para una navegación sin red: la landing para /bienvenida y lo de dentro; la app para el resto. */
+function paginaSinRed(pathname) {
+  const landing = new URL("./bienvenida", self.location.href).pathname;
+  return pathname === landing || pathname.startsWith(landing + "/") ? "./bienvenida/index.html" : "./index.html";
+}
 
 self.addEventListener("install", event => {
   event.waitUntil(
@@ -83,8 +90,9 @@ self.addEventListener("fetch", event => {
   if (url.pathname.startsWith("/api/") || req.headers.has("authorization")) return;
 
   if (req.mode === "navigate") {
+    const pagina = paginaSinRed(url.pathname);
     event.respondWith(
-      fetch(req).catch(() => caches.match("./index.html", { ignoreSearch: true }))
+      fetch(req).catch(() => caches.match(pagina, { ignoreSearch: true, ignoreVary: true }))
     );
     return;
   }
@@ -106,7 +114,8 @@ self.addEventListener("fetch", event => {
 
   if (url.origin === self.location.origin) {
     event.respondWith(
-      caches.match(req, { ignoreSearch: true }).then(hit =>
+      // ignoreVary: lo precacheado se pidió sin las cabeceras de la página (Origin en los módulos).
+      caches.match(req, { ignoreSearch: true, ignoreVary: true }).then(hit =>
         hit || fetch(req).then(res => {
           if (res && res.ok && res.type === "basic") {
             const copy = res.clone();

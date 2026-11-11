@@ -1,0 +1,155 @@
+---
+import Base from "../layouts/Base.astro";
+import { TRACK_META } from "../data/tracks";
+
+const title = "Ruta de inglés · A2 → B1 y B1 → B2 en 24 semanas";
+const description =
+  "Plan diario de 45 minutos para llegar al B1 o al B2: vocabulario con repetición espaciada, gramática, Use of English, escucha, lectura, writing y speaking. Prueba sin cuenta.";
+const rutas = TRACK_META.map(t => t.name).join(" y ");
+---
+
+<Base title={title} description={description} cartelCarga={false}>
+  <!-- El tema elegido en la app se respeta aquí; solo se lee, no se escribe nada. -->
+  <script is:inline slot="head">
+    try {
+      var t = JSON.parse(localStorage.getItem("ruta-b1b2-v1") || "null");
+      if (t && (t.theme === "dark" || t.theme === "light")) document.documentElement.dataset.theme = t.theme;
+    } catch (e) { /* sin almacenamiento: tema del sistema */ }
+  </script>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="m3 7 9 6 9-6"></path></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5v5.5M12 16.5v.01"></path></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"></path></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+  </svg>
+
+  <div class="landing">
+    <header class="l-in l-top">
+      <span class="l-marca"><span class="l-r" aria-hidden="true">R</span>Ruta de inglés</span>
+    </header>
+
+    <main id="lmain">
+      <section class="l-in l-hero" aria-labelledby="t-land">
+        <div class="l-t">
+          <span class="l-crumb">Rutas {rutas}, para hispanohablantes</span>
+          <h1 class="l-hero-t" tabindex="-1" id="t-land">Llega al B1 o al B2 en 24 semanas, con 45 minutos al día</h1>
+          <p class="l-lede">Un plan diario de vocabulario, gramática, Use of English, escucha y lectura, más writing y speaking con corrección, pensado para los errores que comete quien piensa en español. Prepara Cambridge B1 Preliminary, B2 First o IELTS.</p>
+          <p class="l-tuyo" id="tuyo" hidden>Tu progreso sigue en este navegador. Entra con tu correo y pasa a tu cuenta.</p>
+
+          <div id="avisoCaducado" class="l-banner" role="alert" tabindex="-1" hidden>
+            <svg class="l-icon" aria-hidden="true"><use href="#i-alert"></use></svg>
+            <div class="l-tx"><b>Ese enlace caducó o ya se usó.</b><span>Pide otro: escribe tu correo y te mandamos uno nuevo.</span></div>
+          </div>
+          <div id="avisoError" class="l-banner" role="alert" tabindex="-1" hidden>
+            <svg class="l-icon" aria-hidden="true"><use href="#i-alert"></use></svg>
+            <div class="l-tx"><b>No se pudo completar la entrada.</b><span>Inténtalo otra vez con tu correo.</span></div>
+          </div>
+          <div id="avisoApagada" class="l-banner l-warn" role="status" tabindex="-1" hidden>
+            <svg class="l-icon" aria-hidden="true"><use href="#i-alert"></use></svg>
+            <div class="l-tx"><b>La entrada no está disponible ahora.</b><span>No te mandaríamos el correo, así que no te lo pedimos. Las actividades de prueba siguen funcionando; vuelve más tarde para entrar.</span></div>
+          </div>
+          <div id="avisoRed" class="l-banner l-warn" role="status" tabindex="-1" hidden>
+            <svg class="l-icon" aria-hidden="true"><use href="#i-alert"></use></svg>
+            <div class="l-tx"><b>Sin conexión: para entrar necesitas internet.</b><span>Puedes seguir probando las actividades.</span></div>
+          </div>
+
+          <form class="l-entry" id="entrada" novalidate>
+            <label for="lmail">Tu correo</label>
+            <div class="l-line">
+              <input class="l-input" id="lmail" name="email" type="email" autocomplete="email" inputmode="email" spellcheck="false" placeholder="nombre@correo.com" aria-describedby="lmailHint" />
+              <button class="l-btn l-btn-primary" type="submit" id="lgo">Entrar con tu correo</button>
+            </div>
+            <span class="l-hint" id="lmailHint">Te mandamos un enlace para entrar. Sin contraseña; vale igual si es tu primera vez.</span>
+            <span class="l-err" id="lmailErr" role="alert" hidden><svg class="l-icon" aria-hidden="true"><use href="#i-alert"></use></svg><span id="lmailErrTx"></span></span>
+          </form>
+
+          <div class="l-sent" id="enviado" role="status" tabindex="-1" hidden>
+            <h2><svg class="l-icon" aria-hidden="true"><use href="#i-mail"></use></svg>Revisa tu correo</h2>
+            <p id="enviadoTx"></p>
+            <p id="buzon" hidden></p>
+            <div class="l-row">
+              <button class="l-btn l-btn-secondary" type="button" id="reenviar">Reenviar el enlace</button>
+              <button class="l-btn l-btn-quiet" type="button" id="otroCorreo">Usar otro correo</button>
+            </div>
+          </div>
+        </div>
+
+        <section class="l-try" id="prueba" tabindex="-1" aria-labelledby="pruebaT">
+          <div class="l-try-head">
+            <fieldset class="l-rutas" id="rutaMuestra">
+              <legend>Ruta de la muestra</legend>
+              {TRACK_META.map(t => (
+                <label><input type="radio" name="rutaMuestra" value={t.id} checked={t.id === "b1b2"} />{t.name}</label>
+              ))}
+            </fieldset>
+            <span class="l-chip" id="pruebaChip" hidden></span>
+          </div>
+          <span class="l-try-t" id="pruebaT">Pruébalo ahora</span>
+          <div class="l-try-body" id="pruebaCuerpo"></div>
+        </section>
+      </section>
+
+      <section class="l-band" aria-labelledby="t-plan24">
+        <div class="l-in">
+          <div class="l-sec-head">
+            <span class="l-crumb">Ruta B1 → B2</span>
+            <h2 id="t-plan24">Cuatro bloques de seis semanas</h2>
+            <p class="l-lede">Cinco sesiones por semana, 120 en total. Cada día sabes qué hacer y en qué orden.</p>
+          </div>
+          <ol class="l-weeks">
+            <li class="l-blk"><span class="l-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="l-wk">Semanas 1–6</span><b>Reconstruir la base</b><p>Tiempos verbales, duración, futuro y orden de la frase. Cierra con el primer simulacro.</p></li>
+            <li class="l-blk"><span class="l-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="l-wk">Semanas 7–12</span><b>Del B1 sólido al B2 inicial</b><p>Obligación, artículos e incontables, preposiciones, gerundio o infinitivo y condicionales.</p></li>
+            <li class="l-blk"><span class="l-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="l-wk">Semanas 13–18</span><b>Precisión y rango B2</b><p>Grados de certeza, relativas, pasiva, estilo indirecto, causativo y conectores.</p></li>
+            <li class="l-blk"><span class="l-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="l-wk">Semanas 19–24</span><b>Formato, velocidad y nervios</b><p>Cohesión, writing y speaking por formato, ensayo general y semana del examen.</p></li>
+          </ol>
+          <div class="l-day">
+            <div><h3>Un día cualquiera: el 37</h3><p class="l-small">Incontables que en español sí son contables. Lo que hagas cambia lo que te toca mañana.</p></div>
+            <ol class="l-blocks">
+              <li><span class="l-min">0–8 min</span><span class="l-nm">Vocabulario</span><span class="l-wh">12 tarjetas, incluidas las que fallaste ayer.</span></li>
+              <li><span class="l-min">8–20 min</span><span class="l-nm">Gramática</span><span class="l-wh">Seis drills de la unidad 14, sin mirar la regla.</span></li>
+              <li><span class="l-min">20–34 min</span><span class="l-nm">Use of English</span><span class="l-wh">Seis ítems de open cloze.</span></li>
+              <li><span class="l-min">34–45 min</span><span class="l-nm">Producción</span><span class="l-wh">Diez frases con information, advice, news y equipment.</span></li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section class="l-sec l-in" aria-labelledby="t-muestra">
+        <div class="l-sec-head">
+          <h2 id="t-muestra">Prueba sin cuenta</h2>
+          <p class="l-lede">Actividades reales del curso, corregidas al momento. No se guarda nada: al recargar la página empiezan de cero.</p>
+        </div>
+        <ul class="l-rows">
+          <li class="l-rowcard"><span class="l-badge" aria-hidden="true">DG</span><span class="l-tx"><b>Diagnóstico completo</b><span>Diez preguntas de tu ruta y tu nivel por destreza. Es lo único que pasa a tu cuenta si entras en esta pestaña.</span></span><button class="l-btn l-btn-quiet" type="button" data-probar="diag" aria-label="Empezar el diagnóstico completo">Empezar</button></li>
+          <li class="l-rowcard"><span class="l-badge" aria-hidden="true">VO</span><span class="l-tx"><b>Tarjetas de vocabulario</b><span>Ocho palabras del primer mazo: dices si la sabes y ves si acertaste.</span></span><button class="l-btn l-btn-quiet" type="button" data-probar="tarjetas" aria-label="Empezar las tarjetas de vocabulario">Empezar</button></li>
+          <li class="l-rowcard"><span class="l-badge" aria-hidden="true">LI</span><span class="l-tx"><b>Escucha en tres pases</b><span>Idea general, detalle y transcripción, con la voz de tu navegador.</span></span><button class="l-btn l-btn-quiet" type="button" data-probar="escucha" aria-label="Empezar la escucha en tres pases">Empezar</button></li>
+          <li class="l-rowcard"><span class="l-badge" aria-hidden="true">UE</span><span class="l-tx"><b>Use of English</b><span>Una transformación como las del examen, con la explicación de la respuesta.</span></span><button class="l-btn l-btn-quiet" type="button" data-probar="uoe" aria-label="Empezar Use of English">Empezar</button></li>
+        </ul>
+      </section>
+
+      <section class="l-sec l-in" style="padding-top:0" aria-labelledby="t-gana">
+        <div class="l-sec-head">
+          <h2 id="t-gana">Con cuenta tienes todo</h2>
+          <p class="l-lede">No hay planes de pago. Sin cuenta pruebas; con cuenta estudias.</p>
+        </div>
+        <dl class="l-gains">
+          <div><dt>Tu progreso, guardado</dt><dd>En el móvil y en el ordenador. Si estudias sin conexión, se sube solo al volver la red.</dd></div>
+          <div><dt>El plan entero</dt><dd>Las 120 sesiones de tu ruta, con el día de hoy siempre a mano.</dd></div>
+          <div><dt>Mi seguimiento</dt><dd>Tu nivel por destreza semana a semana, y de qué ejercicios sale cada dato.</dd></div>
+          <div><dt>Un agente que mira tus errores</dt><dd>Propone repasos y ajustes del plan; tú decides si los aceptas.</dd></div>
+        </dl>
+        <div style="margin-top:32px"><button class="l-btn l-btn-secondary" type="button" data-ir-correo><svg class="l-icon" aria-hidden="true"><use href="#i-mail"></use></svg>Escribir mi correo</button></div>
+      </section>
+    </main>
+
+    <footer class="l-in l-foot">
+      <span class="l-small">Ruta de inglés. Funciona sin conexión una vez cargada.</span>
+      <span class="l-small">Si ya estudiabas aquí sin cuenta, tu progreso pasa a tu cuenta al entrar.</span>
+    </footer>
+  </div>
+</Base>
+
+<script>
+  import "../scripts/landing/main";
+</script>
